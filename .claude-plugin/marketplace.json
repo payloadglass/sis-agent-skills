@@ -1,0 +1,32 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "sis-agent-skills",
+  "description": "CLI-only SIS skills for document security operations and corpus intelligence.",
+  "owner": {
+    "name": "PayloadGlass"
+  },
+  "metadata": {
+    "version": "0.1.0",
+    "description": "Portable Agent Skills for SIS CLI workflows."
+  },
+  "plugins": [
+    {
+      "name": "sis-agent-skills",
+      "description": "Scan, triage, analyse, index, hunt, and evaluate hostile document content with the SIS CLI.",
+      "author": {
+        "name": "PayloadGlass"
+      },
+      "category": "security",
+      "source": "./",
+      "strict": false,
+      "skills": [
+        "./skills/sis-scan",
+        "./skills/sis-triage",
+        "./skills/sis-analyze",
+        "./skills/sis-corpus-index",
+        "./skills/sis-corpus-hunt",
+        "./skills/sis-corpus-evaluate"
+      ]
+    }
+  ]
+}

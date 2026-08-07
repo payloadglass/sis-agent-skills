@@ -1,0 +1,62 @@
+[
+  {
+    "skill": "sis-scan",
+    "should_trigger": true,
+    "prompt": "Scan this PDF with SIS and save the JSON report."
+  },
+  {
+    "skill": "sis-scan",
+    "should_trigger": false,
+    "prompt": "Explain what a PDF file is without scanning anything."
+  },
+  {
+    "skill": "sis-triage",
+    "should_trigger": true,
+    "prompt": "Triage this SIS report and tell me what needs analyst attention first."
+  },
+  {
+    "skill": "sis-triage",
+    "should_trigger": false,
+    "prompt": "Build a corpus index for this directory."
+  },
+  {
+    "skill": "sis-analyze",
+    "should_trigger": true,
+    "prompt": "Perform baseline and deep SIS analysis of this one suspicious document."
+  },
+  {
+    "skill": "sis-analyze",
+    "should_trigger": false,
+    "prompt": "Rank these two hundred reports for SOC review."
+  },
+  {
+    "skill": "sis-corpus-index",
+    "should_trigger": true,
+    "prompt": "Create an incremental SIS corpus index for /srv/corpus."
+  },
+  {
+    "skill": "sis-corpus-index",
+    "should_trigger": false,
+    "prompt": "Search the existing corpus index for one finding kind."
+  },
+  {
+    "skill": "sis-corpus-hunt",
+    "should_trigger": true,
+    "prompt": "Find every occurrence of this embedded content digest in the SIS corpus index."
+  },
+  {
+    "skill": "sis-corpus-hunt",
+    "should_trigger": false,
+    "prompt": "Run a deep analysis of this one file."
+  },
+  {
+    "skill": "sis-corpus-evaluate",
+    "should_trigger": true,
+    "prompt": "Compare this corpus run with the previous SIS baseline and identify regressions."
+  },
+  {
+    "skill": "sis-corpus-evaluate",
+    "should_trigger": false,
+    "prompt": "Incrementally sync this directory into an index without evaluating it."
+  }
+]

@@ -1,0 +1,24 @@
+{
+  "pack_version": "0.1.0",
+  "runtime_option": "cli-only",
+  "sis": {
+    "minimum": "0.6.6",
+    "tested_contract": [
+      "sis scan INPUT --emit json=PATH",
+      "sis scan INPUT --deep --emit json=PATH",
+      "sis corpus sync NAME --index PATH --location DIRECTORY --jobs N",
+      "sis corpus status NAME --index PATH",
+      "sis corpus query NAME --index PATH --family FAMILY --group FIELDS --json"
+    ]
+  },
+  "hosts": {
+    "agent-skills-standard": "compatible",
+    "claude-code": "marketplace-manifest-included",
+    "openai-chatgpt": "per-skill-zip",
+    "openai-codex": "per-skill-zip"
+  },
+  "mcp": {
+    "supported": false,
+    "planned": true
+  }
+}
