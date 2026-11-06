@@ -17,6 +17,7 @@ SKILLS = [
     "sis-scan",
     "sis-triage",
     "sis-analyze",
+    "sis-query",
     "sis-corpus-index",
     "sis-corpus-hunt",
     "sis-corpus-evaluate",

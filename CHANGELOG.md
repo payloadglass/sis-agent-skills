@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0
+
+Adds `sis-query`: run a targeted `sis query` projection (findings, chains,
+structure, asset-path selectors) against a live file or a saved report,
+including the three-valued `--where` predicate semantics and
+`excluded_unknown` accounting. Requires SIS CLI 0.71.0 or newer (the unified
+`sis query` front door). Updates the manifest, marketplace plugin list,
+validator, release builder, and smoke test to seven normalized skills.
+
 ## 0.1.0
 
 Initial CLI-only pack with six normalized skills:

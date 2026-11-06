@@ -1,5 +1,5 @@
 {
-  "pack_version": "0.1.0",
+  "pack_version": "0.2.0",
   "runtime_option": "cli-only",
   "sis": {
     "minimum": "0.6.6",
@@ -8,8 +8,14 @@
       "sis scan INPUT --deep --emit json=PATH",
       "sis corpus sync NAME --index PATH --location DIRECTORY --jobs N",
       "sis corpus status NAME --index PATH",
-      "sis corpus query NAME --index PATH --family FAMILY --group FIELDS --json"
-    ]
+      "sis corpus query NAME --index PATH --family FAMILY --group FIELDS --json",
+      "sis query QUERY INPUT --format FORMAT --where PREDICATE",
+      "sis query QUERY --from-report REPORT --format FORMAT",
+      "sis query --contract-version"
+    ],
+    "skill_minimums": {
+      "sis-query": "0.71.0"
+    }
   },
   "hosts": {
     "agent-skills-standard": "compatible",

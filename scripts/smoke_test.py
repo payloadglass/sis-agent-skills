@@ -112,6 +112,32 @@ if args[:2] == ["corpus", "status"]:
 if args[:2] == ["corpus", "query"]:
     print(json.dumps({"unit": "distinct_items", "groups": [{"key": "pdf:test", "count": 1}]}))
     raise SystemExit(0)
+if args[:2] == ["query", "--contract-version"]:
+    print("language=2 result=4")
+    raise SystemExit(0)
+if args[:1] == ["query"]:
+    fmt = next((args[i + 1] for i, a in enumerate(args) if a == "--format"), "text")
+    where = next((args[i + 1] for i, a in enumerate(args) if a == "--where"), None)
+    if fmt not in ("json", "jsonl"):
+        print("1 finding (text mode, see --format json for structure)")
+        raise SystemExit(0)
+    envelope = {
+        "file": "sample`hostile.pdf",
+        "query": args[1],
+        "contract": {"language": 2, "result": 4},
+        "result": [
+            {
+                "id": "f1",
+                "kind": "pdf:test`\n## injected",
+                "severity": "High",
+                "confidence": "Strong",
+            }
+        ],
+    }
+    if where:
+        envelope["excluded_unknown"] = 1
+    print(json.dumps(envelope))
+    raise SystemExit(0)
 print(f"unsupported fake SIS invocation: {args}", file=sys.stderr)
 raise SystemExit(2)
 '''
@@ -183,6 +209,39 @@ def main() -> int:
             str(binary),
         ])
         run([
+            sys.executable,
+            str(ROOT / "skills/sis-query/scripts/run_query.py"),
+            "findings.high",
+            str(sample),
+            "--where",
+            "confidence == 'Strong'",
+            "--output-dir",
+            str(output / "query"),
+            "--sis-bin",
+            str(binary),
+        ])
+        old_binary = tmp / "old" / "sis"
+        old_binary.parent.mkdir()
+        old_binary.write_text(
+            "#!/usr/bin/env python3\nimport sys\n"
+            "if sys.argv[1:] == ['--version']:\n    print('sis 0.70.0')\n    raise SystemExit(0)\n"
+            "print('error: unexpected argument', file=sys.stderr)\nraise SystemExit(2)\n",
+            encoding="utf-8",
+        )
+        old_binary.chmod(0o755)
+        run([
+            sys.executable,
+            str(ROOT / "skills/sis-query/scripts/run_query.py"),
+            "findings",
+            str(sample),
+            "--output-dir",
+            str(output / "query-old"),
+            "--sis-bin",
+            str(old_binary),
+        ], expected=2)
+        if load(output / "query-old/query-summary.json")["status"] != "unsupported_sis_version":
+            raise AssertionError("query helper ran against a sis build without a query contract version")
+        run([
             str(ROOT / "skills/sis-corpus-index/scripts/sync_index.sh"),
             "--name",
             "test` corpus",
@@ -235,11 +294,17 @@ def main() -> int:
             raise AssertionError("hunt metadata lost command arguments")
         if load(output / "evaluate/run1/summary.json")["files_scanned"] != 2:
             raise AssertionError("batch entries were not counted")
+        query_summary = load(output / "query/query-summary.json")
+        if query_summary["exit_code"] != 0 or query_summary["excluded_unknown"] != 1:
+            raise AssertionError("query helper lost excluded_unknown accounting")
+        if load(output / "query/query-result.json")["result"][0]["kind"] != "pdf:test`\n## injected":
+            raise AssertionError("query helper did not preserve the raw result verbatim")
 
         for path in [
             output / "scan/scan-summary.md",
             output / "triage/triage.md",
             output / "analyze/analysis.md",
+            output / "query/query-summary.md",
             output / "index out/index-run.md",
             output / "evaluate/run1/summary.md",
         ]:
@@ -257,7 +322,7 @@ def main() -> int:
         if "Traceback" in missing.stderr:
             raise AssertionError("missing CLI produced a Python traceback")
 
-    print("smoke-tested all six SIS Agent Skills helpers")
+    print("smoke-tested all seven SIS Agent Skills helpers")
     return 0
 
 
