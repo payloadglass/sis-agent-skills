@@ -12,7 +12,7 @@
   "plugins": [
     {
       "name": "sis-agent-skills",
-      "description": "Scan, triage, analyse, query, index, hunt, and evaluate hostile document content with the SIS CLI.",
+      "description": "Verify or install SIS with checksum and attestation checks, then scan, triage, analyse, query, index, hunt, and evaluate hostile document content locally with the SIS CLI.",
       "author": {
         "name": "PayloadGlass"
       },
@@ -20,6 +20,7 @@
       "source": "./",
       "strict": false,
       "skills": [
+        "./skills/sis-setup",
         "./skills/sis-scan",
         "./skills/sis-triage",
         "./skills/sis-analyze",

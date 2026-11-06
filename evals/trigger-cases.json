@@ -1,5 +1,25 @@
 [
   {
+    "skill": "sis-setup",
+    "should_trigger": true,
+    "prompt": "I don't have sis installed. Can you set it up and make sure the binary is verified before we scan anything?"
+  },
+  {
+    "skill": "sis-setup",
+    "should_trigger": true,
+    "prompt": "sis --version says 0.6.9 and the query skill wants something newer. Check it and update it safely."
+  },
+  {
+    "skill": "sis-setup",
+    "should_trigger": false,
+    "prompt": "Scan this PDF with SIS and save the JSON report."
+  },
+  {
+    "skill": "sis-setup",
+    "should_trigger": false,
+    "prompt": "Install the Python requests package and run my test suite."
+  },
+  {
     "skill": "sis-scan",
     "should_trigger": true,
     "prompt": "Scan this PDF with SIS and save the JSON report."

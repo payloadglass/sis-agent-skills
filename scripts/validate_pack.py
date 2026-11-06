@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED = {
+    "sis-setup",
     "sis-scan",
     "sis-triage",
     "sis-analyze",
@@ -106,8 +107,26 @@ def main() -> int:
     if compatibility.get("pack_version") != manifest.get("version"):
         fail("manifest and compatibility pack versions differ")
     minimum = compatibility.get("sis", {}).get("minimum")
-    if minimum != "0.6.6":
-        fail("CLI pack must declare SIS 0.6.6 as its minimum supported version")
+    if minimum != "0.70.0":
+        fail("CLI pack must declare SIS 0.70.0 as its minimum supported version")
+    skill_minimums = compatibility.get("sis", {}).get("skill_minimums", {})
+    if skill_minimums != {"sis-query": "0.71.0"}:
+        fail("sis-query must be the only skill with a higher minimum (0.71.0)")
+    if compatibility.get("network", {}).get("telemetry") is not False:
+        fail("compatibility.json must declare telemetry false")
+    # Each SKILL.md states the minimum that compatibility.json declares for it.
+    for skill in sorted(EXPECTED - {"sis-setup"}):
+        required = skill_minimums.get(skill, minimum)
+        text = (skills_root / skill / "SKILL.md").read_text(encoding="utf-8")
+        if f"SIS CLI {required} or newer" not in text:
+            fail(f"{skill}: SKILL.md compatibility does not state SIS CLI {required} or newer")
+    check_script = (skills_root / "sis-setup/scripts/check_sis.sh").read_text(encoding="utf-8")
+    if f'minimum="{minimum}"' not in check_script:
+        fail("sis-setup check_sis.sh default minimum differs from compatibility.json")
+    for forbidden in ("curl", "wget", "Invoke-WebRequest"):
+        for script in (skills_root / "sis-setup/scripts").iterdir():
+            if forbidden in script.read_text(encoding="utf-8"):
+                fail(f"{script}: setup helpers must not download; found {forbidden!r}")
 
     marketplace = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text(encoding="utf-8"))
     plugins = marketplace.get("plugins", [])

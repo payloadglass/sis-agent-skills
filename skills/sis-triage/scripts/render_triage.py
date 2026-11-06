@@ -105,7 +105,7 @@ def main() -> int:
         "",
         f"- Report: {md_code(report_path)}",
         f"- Report SHA-256: {md_code(observed['report_sha256'])}",
-        f"- SIS version: {md_code(observed['sis_version'] or 'unknown')}",
+        f"- SIS version: {md_code(observed['sis_version'] or 'not recorded in the report; take it from the scan run (scan-summary.json)')}",
         f"- Verdict: {md_code(v.get('label') or 'unknown')}",
         f"- Score: {md_code(v.get('score') if v.get('score') is not None else 'unknown')}",
         f"- Confidence: {md_code(v.get('confidence') or 'unknown')}",

@@ -2,8 +2,9 @@
   "name": "sis-agent-skills",
   "version": "0.2.0",
   "runtime": "cli",
-  "description": "Agent Skills for evidence-driven SIS scanning, triage, analysis, querying, corpus indexing, hunting, and evaluation.",
+  "description": "Agent Skills for verified SIS setup and evidence-driven scanning, triage, analysis, querying, corpus indexing, hunting, and evaluation.",
   "skills": [
+    "sis-setup",
     "sis-scan",
     "sis-triage",
     "sis-analyze",

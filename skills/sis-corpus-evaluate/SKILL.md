@@ -1,9 +1,9 @@
 ---
 name: sis-corpus-evaluate
 description: "Evaluate a corpus with SIS, compare a previous batch report, identify verdict or finding regressions, surface scan errors and coverage changes, and rank evidence-backed follow-up candidates. Use for release evaluation, detector calibration, corpus baselines, regression spotting, and case-study candidate generation. Do not use for merely syncing an index or hunting one known value."
-compatibility: "Requires SIS CLI 0.6.6 or newer with directory scan JSON emission."
+compatibility: "Requires SIS CLI 0.70.0 or newer with directory scan JSON emission."
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   runtime: "cli"
   role: "corpus-evaluation-engineer"
 ---
@@ -50,6 +50,16 @@ python3 scripts/evaluate_corpus.py CORPUS_DIR \
 
 See [references/evaluation-method.md](references/evaluation-method.md) for
 regression and candidate criteria.
+
+## Version-guarded notes
+
+- To record the same evaluation in a corpus index, `sis scan --index` exists only
+  from sis 0.71.0 and is opt-in; the evaluation helper does not use it.
+- To cluster the evaluated batch afterwards, see the `sis corpus correlate` note in
+  `sis-corpus-hunt`: zero clusters is not proof of no overlap, and from 0.71.0 a
+  correlate that skipped everything fails non-zero (`--allow-skips` overrides).
+- Gate comparisons on `verdict.label`; in 0.70.0 `--fail-on anomalous` does not trip
+  on Suspicious.
 
 ## Required output
 
