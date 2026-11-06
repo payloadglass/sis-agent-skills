@@ -14,3 +14,8 @@ A host-specific evaluation harness should verify at least:
 6. mutating actions require explicit confirmation.
 
 The pack validator checks that every skill has both positive and negative cases.
+
+Host-by-host discovery runs follow `discovery-protocol.md` (not yet run).
+The setup skill's cases include a user who has no `sis` installed (positive) and an
+unrelated package-install request (negative), because install requests are the
+most likely confusion.

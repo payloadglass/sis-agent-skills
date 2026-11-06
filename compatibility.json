@@ -2,26 +2,53 @@
   "pack_version": "0.2.0",
   "runtime_option": "cli-only",
   "sis": {
-    "minimum": "0.6.6",
-    "tested_contract": [
-      "sis scan INPUT --emit json=PATH",
-      "sis scan INPUT --deep --emit json=PATH",
-      "sis corpus sync NAME --index PATH --location DIRECTORY --jobs N",
-      "sis corpus status NAME --index PATH",
-      "sis corpus query NAME --index PATH --family FAMILY --group FIELDS --json",
-      "sis query QUERY INPUT --format FORMAT --where PREDICATE",
-      "sis query QUERY --from-report REPORT --format FORMAT",
-      "sis query --contract-version"
-    ],
+    "minimum": "0.70.0",
     "skill_minimums": {
       "sis-query": "0.71.0"
+    },
+    "tested_against": "0.70.0",
+    "tested_contract": [
+      "sis --version",
+      "sis scan INPUT --emit json=PATH",
+      "sis scan INPUT --deep --emit json=PATH",
+      "sis scan INPUT --analysis-profile deep --emit json=PATH",
+      "sis query findings --from-report REPORT --format json",
+      "sis corpus sync NAME --index PATH --location DIRECTORY --jobs N",
+      "sis corpus status NAME --index PATH",
+      "sis corpus query NAME --index PATH --family FAMILY --group FIELDS --limit N --order desc --json",
+      "sis corpus occurrences NAME --index PATH --content-digest DIGEST --json",
+      "sis corpus extract NAME --index PATH --location DIRECTORY --source KEY --asset-path PATH --out FILE"
+    ],
+    "documented_not_verified_against_a_release": {
+      "since": "0.71.0",
+      "note": "Checked against the 0.71.0 documentation branch only; re-verify against the published 0.71.0 binary before relying on it.",
+      "contract": [
+        "sis query --contract-version",
+        "sis query --describe --format json",
+        "sis query QUERY INPUT --format FORMAT --where PREDICATE",
+        "sis query QUERY --from-report REPORT --format FORMAT",
+        "sis scan INPUT --index CORPUS_OR_INDEX_PATH (opt-in)",
+        "sis corpus correlate SUBCOMMAND --input JSONL [--allow-skips]"
+      ]
     }
+  },
+  "release_provenance": {
+    "release_repository": "payloadglass/sis-release",
+    "checksums": "SHA256SUMS",
+    "attestation": "gh attestation verify ARCHIVE --repo payloadglass/sis-release",
+    "installed_by_pack": false,
+    "note": "sis-setup downloads nothing on its own; it verifies archives the user approved fetching."
   },
   "hosts": {
     "agent-skills-standard": "compatible",
     "claude-code": "marketplace-manifest-included",
     "openai-chatgpt": "per-skill-zip",
     "openai-codex": "per-skill-zip"
+  },
+  "network": {
+    "pack_scripts_make_requests": false,
+    "telemetry": false,
+    "upload": false
   },
   "mcp": {
     "supported": false,

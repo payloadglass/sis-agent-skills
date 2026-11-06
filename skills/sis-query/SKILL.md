@@ -3,7 +3,7 @@ name: sis-query
 description: "Run ad-hoc `sis query` projections over an analysed file's findings, structure, and content — a specific finding kind, a chain, an object subtree, a stream, or an asset-path selector. Use when an agent needs a targeted, reproducible projection rather than a full scan or triage verdict, including filtering with `--where`, reading saved reports with `--from-report`, or walking the nested asset graph with a selector. Do not use to run an initial scan (use sis-scan) or to produce an operational triage record (use sis-triage); do not use for corpus-wide hunting across many samples (use sis-corpus-hunt)."
 compatibility: "Requires SIS CLI 0.71.0 or newer: the unified `sis query` front door (query contract language >= 2), --describe, --contract-version, and --from-report semantic-snapshot validation."
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   runtime: "cli"
   role: "query-analyst"
 ---
