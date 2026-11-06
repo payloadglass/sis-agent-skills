@@ -14,6 +14,7 @@ EXPECTED = {
     "sis-scan",
     "sis-triage",
     "sis-analyze",
+    "sis-query",
     "sis-corpus-index",
     "sis-corpus-hunt",
     "sis-corpus-evaluate",
@@ -97,7 +98,7 @@ def main() -> int:
 
     manifest = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))
     if set(manifest.get("skills", [])) != EXPECTED:
-        fail("manifest.json does not list exactly the six normalized skills")
+        fail("manifest.json does not list exactly the normalized skills")
 
     compatibility = json.loads((ROOT / "compatibility.json").read_text(encoding="utf-8"))
     if compatibility.get("runtime_option") != "cli-only":

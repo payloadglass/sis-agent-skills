@@ -15,6 +15,7 @@ changing the role boundaries or output contracts defined here.
 | `sis-scan` | Run bounded single-file or directory scans and preserve machine-readable evidence. |
 | `sis-triage` | Turn a SIS report into an operational triage decision with explicit uncertainty. |
 | `sis-analyze` | Compare baseline and deep analysis for one sample and produce analyst artefacts. |
+| `sis-query` | Run a targeted `sis query` projection (findings, chains, structure, asset selectors) against one file or saved report. |
 | `sis-corpus-index` | Build, update, and verify a persistent SIS corpus index. |
 | `sis-corpus-hunt` | Query an index for findings, metadata, identities, coverage, and reused assets. |
 | `sis-corpus-evaluate` | Evaluate a corpus, compare a baseline, and identify regressions and candidates. |

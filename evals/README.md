@@ -1,7 +1,7 @@
 # Skill evaluation cases
 
-`trigger-cases.json` contains positive and negative discovery cases for the six
-skills. It is intentionally host-neutral: each entry names the expected skill,
+`trigger-cases.json` contains positive and negative discovery cases for the
+normalized skills. It is intentionally host-neutral: each entry names the expected skill,
 a user request, and whether that skill should activate.
 
 A host-specific evaluation harness should verify at least:
