@@ -35,9 +35,12 @@ for aggregate questions across many samples in a pre-built index, not one file.
 ## Preconditions
 
 1. Resolve the executable from `SIS_BIN`, falling back to `sis` on `PATH`.
-2. Record `sis query --contract-version` (language/result versions) alongside
-   every result — a query answer is only comparable to another run with the
-   same contract.
+2. Record `sis --version` and `sis query --contract-version` (language/result
+   versions) alongside every result — a query answer is only comparable to
+   another run with the same contract. If `--contract-version` is rejected
+   (`unexpected argument`), the build predates sis 0.71.0: stop and report the
+   version mismatch; do not fall back to guessed spellings. The `sis-setup`
+   skill covers checking and updating the binary.
 3. Confirm the input path exists and is readable, or that the `--from-report`
    target is a single saved report object (not a JSONL capture, workspace, or
    semantic snapshot file).
@@ -45,12 +48,18 @@ for aggregate questions across many samples in a pre-built index, not one file.
 
 ## Command shape
 
+The query text is either a legacy spelling (`findings`, `chains`, `pages`, an
+asset-path selector) or the engine's own pipeline grammar (a root relation,
+then `|`-separated stages). Run `sis query --describe --format json` before
+writing a pipeline by hand; do not invent relations or fields.
+
 ```bash
 sis query findings sample.pdf --format json
 sis query findings.high sample.pdf --where "confidence == 'Strong'" --format json
 sis query chains sample.pdf --chain-summary events --format json
 sis query '**/[format=pe]/sha256' bundle.zip --format json
 sis query findings --from-report report.json --format json
+sis query "items | urls | count urls" sample.pdf --format json
 ```
 
 With two positionals the **query comes first**, then the input. A single
@@ -79,7 +88,9 @@ records the exit code and any structured error (`error_code`,
 
 1. Preserve the raw output exactly; do not reformat or truncate a JSON result
    before quoting it.
-2. Check the process exit code first: 0 is the only success. A structured
+2. Check the process exit code first: 0 is the only success. Exit 5
+   (`ENGINE_ANSWER_INCOMPLETE`) means "answered, but incomplete": report the
+   answer as incomplete, never as complete or empty. A structured
    error (`result.status == "error"` with `result.error_code`) is printed in
    every format and the process still exits non-zero — report the
    `error_code`, don't guess at what it means from prose alone.
@@ -96,6 +107,11 @@ records the exit code and any structured error (`error_code`,
 Use [references/query-recipes.md](references/query-recipes.md)'s "Three-valued
 `--where`" section before interpreting any filtered query — absence is not
 `false`.
+
+6. Read stderr: a `note:` line says whether a legacy spelling was ported to
+   the engine or answered by the legacy implementation, and a `findings_view:
+   "filtered"` context means a saved report's findings were filtered after the
+   scan. Quote both with the result.
 
 ## Required output
 
@@ -115,8 +131,15 @@ summary of a query session with several related queries.
   "no findings have severity X" when the real answer is "N findings have no
   recorded severity at all."
 - Do not recompute a verdict, score, or classification from a query result;
-  if the answer needs one, query for it or say it isn't available from this
-  projection.
+  read the value the model already states. For a saved report's verdict use
+  `sis explain verdict --from-report report.json --json` (the `verdict`,
+  `why`, `tree` and `intent` query spellings were removed and refuse with
+  `QUERY_REMOVED`). If the projection does not state it, say so.
+- A query result is one projection, not a scan verdict. An empty or low-count
+  result does not show the file is safe; keep coverage and omissions from the
+  underlying report visible when summarising.
+- On a ported spelling `--where` is refused with a named reason; use the
+  engine's own `| where` pipeline stage instead of retrying with other flags.
 - Do not invent a field, relation, or finding kind not present in
   `sis query --describe`'s registry or in the result itself.
 - `/text` and `/bytes` asset-selector terminals need live materialised bytes;

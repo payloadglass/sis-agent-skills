@@ -13,7 +13,9 @@
       "sis query QUERY --from-report REPORT --format FORMAT",
       "sis query --contract-version"
     ],
-    "sis-query_minimum": "0.71.0"
+    "skill_minimums": {
+      "sis-query": "0.71.0"
+    }
   },
   "hosts": {
     "agent-skills-standard": "compatible",

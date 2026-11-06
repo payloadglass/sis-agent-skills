@@ -19,6 +19,24 @@ sis query findings --from-report report.json --format json
 `{ "file", "query", "result", "contract", ... }`; findings are under
 `.result[]`.
 
+## The unified language and ported spellings
+
+The query text may be the engine's pipeline grammar directly:
+
+```bash
+sis query "items | pdf_swfs | project pdf_swfs" sample.pdf --format json
+sis query "items | urls | count urls" sample.pdf --format json
+sis query --describe --format json     # every relation, field, operator the build admits
+```
+
+Older dotted spellings (`findings`, `swf.count`, `urls.count`, ...) still work,
+in two kinds, announced once on stderr: **ported** (answered by the engine; a
+`note:` names the native form; `--where`, `--show-lineage`, `--report-verbosity`
+and `--chain-summary` are refused with a named reason — use `| where` in the
+pipeline) and **not yet ported** (answered by the legacy implementation,
+unchanged). Every JSON/JSONL/YAML answer carries `contract: {language, result}`;
+fail clearly on a mismatch with the contract you recorded.
+
 ## Exit codes and structured errors
 
 Exit 0 is the only success, even when the result is an empty list. A
@@ -31,6 +49,7 @@ non-zero:
 | 0 | success (including an empty, correctly-filtered result) |
 | 2 | bad query / report that doesn't parse / mode can't provide the projection (`QUERY_SYNTAX_ERROR`, `REPORT_PARSE_ERROR`, `UNSUPPORTED_IN_REPORT_MODE`, `REQUIRES_REPORT_MODE`, `ASSET_SELECTOR_ERROR`, `QUERY_SCOPE_ERROR`, `PERSISTED_ANALYSIS_REFUSED`) |
 | 3 | another execution failure |
+| 5 | answered but incomplete (`ENGINE_ANSWER_INCOMPLETE`, a ported spelling): report as incomplete |
 | 4 | unreadable report (`FILE_READ_ERROR`) |
 
 Keep stderr diagnostics separate from the result; an empty collection is not

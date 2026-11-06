@@ -220,6 +220,27 @@ def main() -> int:
             "--sis-bin",
             str(binary),
         ])
+        old_binary = tmp / "old" / "sis"
+        old_binary.parent.mkdir()
+        old_binary.write_text(
+            "#!/usr/bin/env python3\nimport sys\n"
+            "if sys.argv[1:] == ['--version']:\n    print('sis 0.70.0')\n    raise SystemExit(0)\n"
+            "print('error: unexpected argument', file=sys.stderr)\nraise SystemExit(2)\n",
+            encoding="utf-8",
+        )
+        old_binary.chmod(0o755)
+        run([
+            sys.executable,
+            str(ROOT / "skills/sis-query/scripts/run_query.py"),
+            "findings",
+            str(sample),
+            "--output-dir",
+            str(output / "query-old"),
+            "--sis-bin",
+            str(old_binary),
+        ], expected=2)
+        if load(output / "query-old/query-summary.json")["status"] != "unsupported_sis_version":
+            raise AssertionError("query helper ran against a sis build without a query contract version")
         run([
             str(ROOT / "skills/sis-corpus-index/scripts/sync_index.sh"),
             "--name",

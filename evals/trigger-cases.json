@@ -40,6 +40,16 @@
     "prompt": "Scan this brand-new PDF with SIS for the first time and save a JSON report."
   },
   {
+    "skill": "sis-query",
+    "should_trigger": true,
+    "prompt": "From this saved SIS report, list only the findings with Strong confidence without rescanning."
+  },
+  {
+    "skill": "sis-query",
+    "should_trigger": false,
+    "prompt": "Count how often this finding kind occurs across my whole indexed corpus."
+  },
+  {
     "skill": "sis-corpus-index",
     "should_trigger": true,
     "prompt": "Create an incremental SIS corpus index for /srv/corpus."
