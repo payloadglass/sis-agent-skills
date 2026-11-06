@@ -11,6 +11,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 EXPECTED = {
+    "sis-setup",
     "sis-scan",
     "sis-triage",
     "sis-analyze",
@@ -97,7 +98,7 @@ def main() -> int:
 
     manifest = json.loads((ROOT / "manifest.json").read_text(encoding="utf-8"))
     if set(manifest.get("skills", [])) != EXPECTED:
-        fail("manifest.json does not list exactly the six normalized skills")
+        fail("manifest.json does not list exactly the normalized skills")
 
     compatibility = json.loads((ROOT / "compatibility.json").read_text(encoding="utf-8"))
     if compatibility.get("runtime_option") != "cli-only":
@@ -105,8 +106,25 @@ def main() -> int:
     if compatibility.get("pack_version") != manifest.get("version"):
         fail("manifest and compatibility pack versions differ")
     minimum = compatibility.get("sis", {}).get("minimum")
-    if minimum != "0.6.6":
-        fail("CLI pack must declare SIS 0.6.6 as its minimum supported version")
+    if minimum != "0.70.0":
+        fail("CLI pack must declare SIS 0.70.0 as its minimum supported version")
+    if "skill_minimums" in compatibility.get("sis", {}):
+        fail("v0.2.0 has a single pack minimum; skill_minimums is not used")
+    if compatibility.get("network", {}).get("telemetry") is not False:
+        fail("compatibility.json must declare telemetry false")
+    # Each SKILL.md states the minimum that compatibility.json declares for it.
+    for skill in sorted(EXPECTED - {"sis-setup"}):
+        required = minimum
+        text = (skills_root / skill / "SKILL.md").read_text(encoding="utf-8")
+        if f"SIS CLI {required} or newer" not in text:
+            fail(f"{skill}: SKILL.md compatibility does not state SIS CLI {required} or newer")
+    check_script = (skills_root / "sis-setup/scripts/check_sis.sh").read_text(encoding="utf-8")
+    if f'minimum="{minimum}"' not in check_script:
+        fail("sis-setup check_sis.sh default minimum differs from compatibility.json")
+    for forbidden in ("curl", "wget", "Invoke-WebRequest"):
+        for script in (skills_root / "sis-setup/scripts").iterdir():
+            if forbidden in script.read_text(encoding="utf-8"):
+                fail(f"{script}: setup helpers must not download; found {forbidden!r}")
 
     marketplace = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text(encoding="utf-8"))
     plugins = marketplace.get("plugins", [])

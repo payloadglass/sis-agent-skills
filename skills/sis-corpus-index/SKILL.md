@@ -1,9 +1,9 @@
 ---
 name: sis-corpus-index
 description: "Build, incrementally update, verify, and document a persistent SIS corpus forensic index. Use when an agent must index a directory, sync new or changed items, choose index and corpus identities, inspect status, or diagnose indexing gaps. Do not use to hunt an already-built index or to evaluate detector quality; use sis-corpus-hunt or sis-corpus-evaluate."
-compatibility: "Requires SIS CLI 0.6.6 or newer with the corpus command surface enabled."
+compatibility: "Requires SIS CLI 0.70.0 or newer with the corpus command surface enabled."
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   runtime: "cli"
   role: "corpus-engineer"
 ---
@@ -46,6 +46,18 @@ scripts/sync_index.sh \
 
 See [references/index-operations.md](references/index-operations.md) for the
 identity and completeness model.
+
+## Version-guarded notes
+
+- **sis 0.71.0 and newer only:** `sis scan INPUT --index CORPUS_OR_INDEX_PATH` can
+  write a scan straight into the same index (opt-in, idempotent, refused with
+  `--stream`). It is not available in 0.70.0; check `sis scan --help` first. Do
+  not use it unless the user asked. Treat the index path as exact: a mistyped path
+  may create a new, empty index, so run `corpus status` afterwards.
+- `sync --prune` removes index entries for files no longer present. It needs
+  explicit operator intent; 0.70.0 skips it (exit 5) when part of the location
+  cannot be seen, and refuses an empty location without `--prune-allow-empty`.
+  Report that skip; it is not success.
 
 ## Required output
 

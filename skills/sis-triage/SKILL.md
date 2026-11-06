@@ -1,9 +1,9 @@
 ---
 name: sis-triage
 description: "Triage an existing SIS JSON report into an operational, evidence-backed summary. Use when an agent must explain a SIS verdict, rank analyst attention, identify material findings and nested assets, expose coverage gaps, or recommend the next bounded action. Do not use to run a new scan unless the report is absent; use sis-scan for acquisition and sis-analyze for deep single-sample investigation."
-compatibility: "Consumes SIS JSON reports produced by SIS CLI 0.6.6 or newer."
+compatibility: "Consumes SIS JSON reports produced by SIS CLI 0.70.0 or newer."
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   runtime: "cli"
   role: "soc-triage-analyst"
 ---
