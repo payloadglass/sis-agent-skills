@@ -15,7 +15,7 @@ on:
       version:
         description: Pack version without a leading v
         required: true
-        default: 0.1.0
+        default: 0.2.0
   push:
     tags:
       - 'v*'
@@ -46,7 +46,7 @@ jobs:
           elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             version="${{ inputs.version }}"
           else
-            version="0.1.0-pr${{ github.event.pull_request.number }}"
+            version="0.2.0-pr${{ github.event.pull_request.number }}"
           fi
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
           echo "version=$version" >> "$GITHUB_OUTPUT"
@@ -63,6 +63,8 @@ jobs:
           set -euo pipefail
           bash -n skills/sis-corpus-index/scripts/sync_index.sh
           bash -n skills/sis-corpus-hunt/scripts/query_index.sh
+          bash -n skills/sis-setup/scripts/check_sis.sh
+          bash -n skills/sis-setup/scripts/install_verified.sh
 
       - name: Smoke-test helper behavior
         run: python3 scripts/smoke_test.py

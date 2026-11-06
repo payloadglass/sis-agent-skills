@@ -3,9 +3,14 @@
 
 from __future__ import annotations
 
+import hashlib
+import io
 import json
+import os
+import shutil
 import subprocess
 import sys
+import tarfile
 import tempfile
 from pathlib import Path
 
@@ -140,6 +145,108 @@ def assert_markdown_safe(path: Path) -> None:
         raise AssertionError(f"untrusted report text escaped Markdown code quoting: {path}")
 
 
+def check_setup_scripts(tmp: Path, fake_sis: Path) -> None:
+    """Exercise sis-setup: version detection, checksum/attestation/contents refusals."""
+    scripts = ROOT / "skills/sis-setup/scripts"
+    check = scripts / "check_sis.sh"
+    install = scripts / "install_verified.sh"
+    work = tmp / "setup"
+    work.mkdir()
+
+    # --- check_sis.sh: fake binary reports 0.6.6-smoke
+    old = run([str(check), "--sis-bin", str(fake_sis), "--minimum", "0.70.0"], expected=4)
+    if "status=too_old" not in old.stdout:
+        raise AssertionError("check_sis.sh did not report a too-old binary")
+    run([str(check), "--sis-bin", str(fake_sis), "--minimum", "0.6.6"], expected=4)  # prerelease < release
+    run([str(check), "--sis-bin", str(work / "nope")], expected=3)
+
+    modern = work / "modern" / "sis"
+    modern.parent.mkdir()
+    modern.write_text("#!/bin/sh\necho 'sis 0.71.0'\n", encoding="utf-8")
+    modern.chmod(0o755)
+    run([str(check), "--sis-bin", str(modern), "--minimum", "0.70.0"])
+    run([str(check), "--sis-bin", str(modern), "--minimum", "0.71.0"])
+    run([str(check), "--sis-bin", str(modern), "--minimum", "0.72.0"], expected=4)
+    garbled = work / "garbled" / "sis"
+    garbled.parent.mkdir()
+    garbled.write_text("#!/bin/sh\necho 'hello`\n## injected'\n", encoding="utf-8")
+    garbled.chmod(0o755)
+    run([str(check), "--sis-bin", str(garbled)], expected=5)
+
+    # --- install_verified.sh with a synthetic archive
+    def make_archive(name: str, members: dict[str, bytes]) -> Path:
+        path = work / name
+        with tarfile.open(path, "w:gz") as tar:
+            for member, data in members.items():
+                info = tarfile.TarInfo(member)
+                info.size = len(data)
+                info.mode = 0o755
+                tar.addfile(info, io.BytesIO(data))
+        return path
+
+    def write_sums(archive: Path, digest: str | None = None, label: str = "good") -> Path:
+        digest = digest or hashlib.sha256(archive.read_bytes()).hexdigest()
+        sums = work / f"SHA256SUMS.{label}.{archive.name}"
+        sums.write_text(f"{digest}  {archive.name}\n", encoding="utf-8")
+        return sums
+
+    good = make_archive(
+        "sis-v9.9.9-test.tar.gz",
+        {"sis": b"#!/bin/sh\necho 'sis 9.9.9'\n", "sis-cdr-worker": b"#!/bin/sh\n"},
+    )
+    good_sums = write_sums(good)
+
+    # fake `gh` (passes / fails) and a tools-only PATH without gh
+    tool_dir = work / "tools"
+    tool_dir.mkdir()
+    for tool in ("sha256sum", "shasum", "tar", "gzip", "awk", "grep", "cut", "tr", "basename", "head", "chmod", "mkdir", "cat", "sh", "bash", "env"):
+        found = shutil.which(tool)
+        if found:
+            (tool_dir / tool).symlink_to(found)
+    gh_dir = work / "gh-ok"
+    gh_dir.mkdir()
+    (gh_dir / "gh").write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    (gh_dir / "gh").chmod(0o755)
+    gh_bad = work / "gh-bad"
+    gh_bad.mkdir()
+    (gh_bad / "gh").write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    (gh_bad / "gh").chmod(0o755)
+
+    def with_path(*dirs: Path) -> dict[str, str]:
+        return {**os.environ, "PATH": os.pathsep.join(str(d) for d in dirs)}
+
+    def run_install(archive: Path, sums: Path, dest: str, env: dict[str, str], *extra: str, expected: int):
+        result = subprocess.run(
+            [str(install), "--archive", str(archive), "--sums", str(sums), "--dest", str(work / dest), *extra],
+            text=True, capture_output=True, check=False, env=env,
+        )
+        if result.returncode != expected:
+            raise AssertionError(f"install_verified.sh {dest}: exit {result.returncode}, expected {expected}\n{result.stdout}\n{result.stderr}")
+        return result
+
+    ok = run_install(good, good_sums, "dest-ok", with_path(gh_dir, tool_dir), expected=0)
+    if "attestation=verified" not in ok.stdout or not (work / "dest-ok/sis").is_file():
+        raise AssertionError("verified install did not extract")
+    run_install(good, good_sums, "dest-ok", with_path(gh_dir, tool_dir), expected=2)  # never overwrite
+    run_install(good, write_sums(good, "0" * 64, "bad"), "dest-badsum", with_path(gh_dir, tool_dir), expected=10)
+    other = work / "SHA256SUMS.other"
+    other.write_text("0" * 64 + "  some-other-archive.tar.gz\n", encoding="utf-8")
+    run_install(good, other, "dest-noline", with_path(gh_dir, tool_dir), expected=10)
+    run_install(good, good_sums, "dest-badatt", with_path(gh_bad, tool_dir), expected=11)
+    if (work / "dest-badatt").exists() or (work / "dest-badsum").exists():
+        raise AssertionError("a refused archive was extracted")
+    nogh = run_install(good, good_sums, "dest-nogh", with_path(tool_dir), expected=20)
+    if "NOT verified" not in nogh.stderr or (work / "dest-nogh").exists():
+        raise AssertionError("missing gh must be stated plainly and extract nothing")
+    accepted = run_install(good, good_sums, "dest-accepted", with_path(tool_dir), "--accept-unattested", expected=0)
+    if "attestation=not-verified" not in accepted.stdout:
+        raise AssertionError("an unattested install must not be reported as verified")
+    evil = make_archive("sis-v9.9.9-evil.tar.gz", {"sis": b"#!/bin/sh\n", "../escape": b"x"})
+    run_install(evil, write_sums(evil), "dest-evil", with_path(gh_dir, tool_dir), expected=12)
+    if (work / "escape").exists() or (work / "dest-evil").exists():
+        raise AssertionError("an archive with an unexpected member was extracted")
+
+
 def main() -> int:
     with tempfile.TemporaryDirectory(prefix="sis-agent-skills-") as tmp_raw:
         tmp = Path(tmp_raw)
@@ -147,6 +254,8 @@ def main() -> int:
         binary.parent.mkdir()
         binary.write_text(FAKE_SIS, encoding="utf-8")
         binary.chmod(0o755)
+
+        check_setup_scripts(tmp, binary)
 
         sample = tmp / "sample`hostile.pdf"
         sample.write_bytes(b"sample")
@@ -257,7 +366,7 @@ def main() -> int:
         if "Traceback" in missing.stderr:
             raise AssertionError("missing CLI produced a Python traceback")
 
-    print("smoke-tested all six SIS Agent Skills helpers")
+    print("smoke-tested all seven SIS Agent Skills helpers")
     return 0
 
 

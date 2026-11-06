@@ -1,9 +1,9 @@
 ---
 name: sis-analyze
 description: "Perform deep, single-sample SIS analysis by preserving a default scan, running a justified deep scan, comparing verdicts, findings, and coverage, and producing analyst-ready artefacts. Use for one suspicious file, parser-boundary investigation, nested asset analysis, or when the user asks what deep mode adds. Do not use for simple acquisition, broad corpus evaluation, or an existing-report-only triage."
-compatibility: "Requires SIS CLI 0.6.6 or newer, Python 3.10+, and local filesystem access."
+compatibility: "Requires SIS CLI 0.70.0 or newer, Python 3.10+, and local filesystem access."
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   runtime: "cli"
   role: "document-malware-analyst"
 ---

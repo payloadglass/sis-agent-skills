@@ -6,13 +6,13 @@
     "name": "PayloadGlass"
   },
   "metadata": {
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Portable Agent Skills for SIS CLI workflows."
   },
   "plugins": [
     {
       "name": "sis-agent-skills",
-      "description": "Scan, triage, analyse, index, hunt, and evaluate hostile document content with the SIS CLI.",
+      "description": "Verify or install SIS with checksum and attestation checks, then scan, triage, analyse, index, hunt, and evaluate hostile document content locally with the SIS CLI.",
       "author": {
         "name": "PayloadGlass"
       },
@@ -20,6 +20,7 @@
       "source": "./",
       "strict": false,
       "skills": [
+        "./skills/sis-setup",
         "./skills/sis-scan",
         "./skills/sis-triage",
         "./skills/sis-analyze",

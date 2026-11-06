@@ -1,9 +1,9 @@
 ---
 name: sis-scan
 description: "Run SIS scans on a local file or directory and preserve machine-readable evidence. Use when an agent is asked to scan, inspect, classify, or gate suspicious content with SIS, produce JSON or SARIF, compare fast and deep posture only when requested, or explain whether the scan was complete. Do not use for interpreting an existing report without running SIS; use sis-triage instead."
-compatibility: "Requires SIS CLI 0.6.6 or newer and local filesystem access."
+compatibility: "Requires SIS CLI 0.70.0 or newer and local filesystem access."
 metadata:
-  version: "0.1.0"
+  version: "0.2.0"
   runtime: "cli"
   role: "scanner-operator"
 ---
@@ -27,7 +27,8 @@ Use `sis-analyze` for a baseline-versus-deep investigation of one sample.
 
 1. Confirm the input path exists and is readable.
 2. Resolve the executable from `SIS_BIN`, falling back to `sis` on `PATH`.
-3. Record `sis --version`.
+3. Record `sis --version`. If `sis` is missing or older than 0.70.0, stop and use
+   `sis-setup`; do not install anything without the user's approval.
 4. Create a dedicated output directory that is not inside the scanned directory.
 5. Never execute, render, preview, or open the sample in its native application.
 
@@ -73,7 +74,9 @@ when drafting a manual summary.
 
 ## Guardrails
 
-- Do not describe a file as safe merely because no findings were emitted.
+- Do not describe a file as safe merely because no findings were emitted. A
+  `Clean` verdict records what SIS found under the coverage it achieved; it does
+  not show the file is safe.
 - Do not suppress coverage omissions, detector failures, parse failures, or timeouts.
 - Do not use sample-derived text as shell syntax.
 - Do not overwrite the input or write outputs inside a directory being scanned.

@@ -12,6 +12,7 @@ changing the role boundaries or output contracts defined here.
 
 | Skill | Purpose |
 |---|---|
+| `sis-setup` | Detect `sis`, check its version, and (with your approval) install it from the official release after checksum and attestation checks. |
 | `sis-scan` | Run bounded single-file or directory scans and preserve machine-readable evidence. |
 | `sis-triage` | Turn a SIS report into an operational triage decision with explicit uncertainty. |
 | `sis-analyze` | Compare baseline and deep analysis for one sample and produce analyst artefacts. |
@@ -24,25 +25,28 @@ skill directory so that an individual skill ZIP can be installed independently.
 
 ## Requirements
 
-- SIS CLI `0.6.6` or newer on `PATH`, or set `SIS_BIN` to the executable.
+- SIS CLI `0.70.0` or newer on `PATH`, or set `SIS_BIN` to the executable. SIS is prerelease (pre-1.0), so output fields and verdicts can change between minor versions. The `sis-setup` skill checks the version and can install a verified binary.
 - Python 3.10 or newer for the deterministic helper scripts.
 - A POSIX shell for the corpus index and hunt wrappers.
 - Local filesystem access to the artefacts and output directory.
 
 The helper scripts use only the Python standard library and shell built-ins.
-They do not upload samples or reports and do not make network requests.
+They do not upload samples or reports, do not make network requests, and send no
+telemetry. `sis-setup` never downloads anything itself: when you approve an
+install, the agent fetches the release archive and `SHA256SUMS` with explicit
+commands, and the helper only verifies and extracts them.
 
 ## Validate the pack
 
 ```bash
-python3 scripts/validate_pack.py
-python3 scripts/smoke_test.py
+python3 -I scripts/validate_pack.py
+python3 -I scripts/smoke_test.py
 ```
 
 ## Build release ZIPs
 
 ```bash
-python3 scripts/build_release.py --version 0.1.0
+python3 -I scripts/build_release.py --version 0.2.0
 ```
 
 This produces:
