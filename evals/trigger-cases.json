@@ -7,7 +7,7 @@
   {
     "skill": "sis-setup",
     "should_trigger": true,
-    "prompt": "sis --version says 0.6.9 and the scan skill wants something newer. Check it and update it safely."
+    "prompt": "sis --version says 0.6.9 and the scan skill wants something newer. Check it and update it, keeping the old version until the new one verifies."
   },
   {
     "skill": "sis-setup",

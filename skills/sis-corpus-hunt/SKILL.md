@@ -19,7 +19,7 @@ filters so counts cannot be mistaken for unique files or unique content.
 - Which producer or creator families co-occur with a signal?
 - Where does this content digest occur at any nesting depth?
 - Which analysis capabilities are commonly omitted?
-- Can an indexed nested asset be safely re-materialized for further scanning?
+- Can an indexed nested asset be re-materialized for further scanning, under a supported materialization class?
 
 ## Procedure
 
@@ -30,7 +30,7 @@ filters so counts cannot be mistaken for unique files or unique content.
 5. Run with `--json` and preserve the query result unchanged.
 6. Separate counts of items, occurrences, and distinct content.
 7. For a content digest, use `occurrences`; use `extract` only when the installed
-   CLI reports a supported materialization class and the output path is safe.
+   CLI reports a supported materialization class and the output path is confined to the intended output directory.
 8. Validate every cited finding kind directly from query or scan output.
 
 The generic query wrapper is:
