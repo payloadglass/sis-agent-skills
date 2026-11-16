@@ -52,7 +52,8 @@ def coverage_summary(report: dict) -> tuple[str | None, list[dict]]:
         entries = batch_entries(report)
         for entry in entries:
             scope = entry.get("assurance_scope") if isinstance(entry.get("assurance_scope"), dict) else {}
-            if entry.get("coverage_withheld") or scope.get("coverage") not in (None, "complete"):
+            # Missing coverage data is unknown, not complete.
+            if entry.get("coverage_withheld") or scope.get("coverage") != "complete":
                 incomplete.append({
                     "path": entry.get("path"),
                     "coverage": scope.get("coverage"),
@@ -78,7 +79,7 @@ def coverage_summary(report: dict) -> tuple[str | None, list[dict]]:
 def verdict_summary(report: dict) -> tuple[str | None, object, object]:
     if "entries" in report:
         labels = [e.get("verdict_label") for e in batch_entries(report) if isinstance(e.get("verdict_label"), str)]
-        worst = max(labels, key=lambda l: LABEL_RANK.get(l.lower(), -1)) if labels else None
+        worst = max(labels, key=lambda l: LABEL_RANK.get(l.lower(), len(LABEL_RANK)))  # unknown label: worst, never hidden if labels else None
         return worst, None, None
     verdict = report.get("verdict")
     if isinstance(verdict, dict):
