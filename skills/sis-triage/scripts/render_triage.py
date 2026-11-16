@@ -121,6 +121,9 @@ def main() -> int:
     else:
         lines.append("- No findings were present in the report. This is not, by itself, a safety conclusion.")
     lines += ["", "## Analysis gaps", ""]
+    if str(v.get("label")).lower() == "anomalous":
+        lines.append("- Verdict Anomalous means sis did not fully examine this input. It is a coverage statement, not evidence of a threat, and it is not a clean result.")
+    lines.append("- Clean means nothing was found in what sis examined; it never means safe. Report what was not examined.")
     omissions = cov.get("omissions") or []
     if omissions:
         for item in omissions:

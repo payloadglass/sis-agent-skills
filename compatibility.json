@@ -1,28 +1,24 @@
 {
-  "pack_version": "0.2.0",
+  "pack_version": "0.3.0",
   "runtime_option": "cli-only",
   "sis": {
-    "minimum": "0.70.0",
-    "tested_against": "0.70.0",
+    "minimum": "0.71.0",
+    "tested_against": "0.71.0",
     "tested_contract": [
       "sis --version",
       "sis scan INPUT --emit json=PATH",
       "sis scan INPUT --deep --emit json=PATH",
       "sis scan INPUT --analysis-profile deep --emit json=PATH",
+      "sis scan INPUT --emit json=PATH --fail-on none|suspicious|anomalous|malicious",
+      "sis scan INPUT --index CORPUS_OR_INDEX_PATH [--create-index]",
       "sis corpus sync NAME --index PATH --location DIRECTORY --jobs N",
       "sis corpus status NAME --index PATH",
       "sis corpus query NAME --index PATH --family FAMILY --group FIELDS --limit N --order desc --json",
       "sis corpus occurrences NAME --index PATH --content-digest DIGEST --json",
-      "sis corpus extract NAME --index PATH --location DIRECTORY --source KEY --asset-path PATH --out FILE"
-    ],
-    "documented_not_verified_against_a_release": {
-      "since": "0.71.0",
-      "note": "Version-guarded notes in the corpus skills only; checked against the 0.71.0 documentation branch, not a published binary. Re-verify before relying on them.",
-      "contract": [
-        "sis scan INPUT --index CORPUS_OR_INDEX_PATH (opt-in)",
-        "sis corpus correlate SUBCOMMAND --input JSONL [--allow-skips]"
-      ]
-    }
+      "sis corpus extract NAME --index PATH --location DIRECTORY --source KEY --asset-path PATH --out FILE",
+      "sis corpus correlate findings --input FILE [--allow-skips]",
+      "sis explain-format FORMAT --json"
+    ]
   },
   "release_provenance": {
     "release_repository": "payloadglass/sis-release",

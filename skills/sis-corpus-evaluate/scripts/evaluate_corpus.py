@@ -44,9 +44,19 @@ def entry_findings(entry: dict) -> set[str]:
 
 
 def entry_coverage(entry: dict):
+    # sis 0.71 batch entries carry `assurance_scope` and `coverage_withheld`;
+    # the full `analysis_coverage` record is only in a single-file report.
     report = entry.get("report") if isinstance(entry.get("report"), dict) else entry
-    value = report.get("analysis_coverage") if isinstance(report, dict) else None
-    return value if isinstance(value, dict) else {}
+    if not isinstance(report, dict):
+        return {}
+    value = report.get("analysis_coverage")
+    if isinstance(value, dict):
+        return value
+    scope = report.get("assurance_scope")
+    result = dict(scope) if isinstance(scope, dict) else {}
+    if report.get("coverage_withheld"):
+        result["coverage_withheld"] = True
+    return result
 
 
 def entries(report: dict) -> list[dict]:
@@ -150,7 +160,8 @@ def main() -> int:
     candidates = []
     for item in current_entries:
         label, _ = entry_verdict(item)
-        if str(label).lower() in {"suspicious", "malicious"}:
+        # Anomalous = not fully examined: a coverage candidate, not a threat claim.
+        if str(label).lower() in {"suspicious", "malicious", "anomalous"}:
             candidates.append({"key": entry_key(item), "verdict": label, "finding_kinds": sorted(entry_findings(item))})
 
     summary = {
@@ -181,7 +192,7 @@ def main() -> int:
         for item in candidates[:50]:
             candidate_lines.append(f"- {md_code(item['key'] or 'unknown')} — {md_code(item['verdict'])} — kinds: {md_code(', '.join(item['finding_kinds']) or 'none exposed')}")
     else:
-        candidate_lines.append("- No suspicious or malicious entries were available in the parsed batch entries.")
+        candidate_lines.append("- No suspicious, malicious or anomalous entries were available in the parsed batch entries.")
     (output / "case-study-candidates.md").write_text("\n".join(candidate_lines) + "\n", encoding="utf-8")
 
     lines = [

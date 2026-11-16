@@ -25,7 +25,7 @@ skill directory so that an individual skill ZIP can be installed independently.
 
 ## Requirements
 
-- SIS CLI `0.70.0` or newer on `PATH`, or set `SIS_BIN` to the executable. SIS is prerelease (pre-1.0), so output fields and verdicts can change between minor versions. The `sis-setup` skill checks the version and can install a verified binary.
+- SIS CLI `0.71.0` or newer on `PATH`, or set `SIS_BIN` to the executable. SIS is prerelease (pre-1.0), so output fields and verdicts can change between minor versions. The `sis-setup` skill checks the version and can install a verified binary.
 - Python 3.10 or newer for the deterministic helper scripts.
 - A POSIX shell for the corpus index and hunt wrappers.
 - Local filesystem access to the artefacts and output directory.
@@ -46,7 +46,7 @@ python3 -I scripts/smoke_test.py
 ## Build release ZIPs
 
 ```bash
-python3 -I scripts/build_release.py --version 0.2.0
+python3 -I scripts/build_release.py --version 0.3.0
 ```
 
 This produces:

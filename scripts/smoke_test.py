@@ -32,39 +32,36 @@ if args and args[0] == "scan":
     if not emit:
         raise SystemExit(2)
     if source.is_dir():
+        # Shape of a real sis 0.71.0 batch report: counts-only summary, no top-level verdict,
+        # per-entry verdict_label + assurance_scope (+ coverage_withheld when true), no findings.
         report = {
+            "summary": {"total": 1, "critical": 0, "high": 1, "medium": 0, "low": 0, "info": 0},
             "entries": [
                 {
+                    "type": "entry",
                     "path": str(source / "a.pdf"),
-                    "status": "ok",
+                    "summary": {"total": 0},
                     "verdict_label": "Clean",
-                    "score": 0.0,
-                    "findings": [],
-                    "analysis_coverage": {"state": "complete", "omissions": []},
-                    "runtime_ms": 10,
+                    "ingest_risk_label": "none",
+                    "assurance_scope": {"nodes_examined": 1, "coverage": "complete", "gaps": []},
+                    "duration_ms": 10,
                 },
                 {
-                    "path": "hostile`\n## injected",
-                    "status": "ok",
-                    "verdict_label": "Suspicious",
-                    "score": 0.7,
-                    "findings": [
-                        {
-                            "kind": "pdf:test`\n## injected",
-                            "severity": "High",
-                            "confidence": "Strong",
-                        }
-                    ],
-                    "analysis_coverage": {
-                        "state": "partial",
-                        "omissions": [
-                            {"capability_id": "detector.test", "reason_id": "fast_excluded"}
-                        ],
+                    "type": "entry",
+                    "path": "unread`\n## injected",
+                    "summary": {"total": 0},
+                    "verdict_label": "Anomalous",
+                    "ingest_risk_label": "indeterminate",
+                    "coverage_withheld": True,
+                    "assurance_scope": {
+                        "nodes_examined": 1,
+                        "coverage": "partial",
+                        "gaps": ["stream:decode_failed (3 omitted)"],
                     },
-                    "runtime_ms": 30,
+                    "duration_ms": 30,
                 },
             ],
-            "summary": {"worst_verdict": "Suspicious", "findings_count": 1},
+            "errors": [{"path": "failed.pdf", "error": "unreadable"}],
         }
     else:
         report = {
@@ -344,9 +341,30 @@ def main() -> int:
             raise AssertionError("hunt metadata lost command arguments")
         if load(output / "evaluate/run1/summary.json")["files_scanned"] != 2:
             raise AssertionError("batch entries were not counted")
+        if load(output / "evaluate/run1/summary.json")["verdict_distribution"] != {"Anomalous": 1, "Clean": 1}:
+            raise AssertionError("batch verdict labels were not read from entries[].verdict_label")
+        if "Anomalous" not in (output / "evaluate/run1/case-study-candidates.md").read_text(encoding="utf-8"):
+            raise AssertionError("an Anomalous (not fully examined) entry was not surfaced as a candidate")
+        run([
+            sys.executable,
+            str(ROOT / "skills/sis-scan/scripts/run_scan.py"),
+            str(corpus),
+            "--output-dir",
+            str(output / "scan-batch"),
+            "--fail-on",
+            "anomalous",
+            "--sis-bin",
+            str(binary),
+        ])
+        batch_summary = load(output / "scan-batch/scan-summary.json")
+        if batch_summary["verdict"] != "Anomalous" or "1 failed" not in str(batch_summary["coverage_state"]):
+            raise AssertionError("batch scan summary did not report the worst label, partial entries and failed files")
+        if batch_summary["findings_count"] != 1 or batch_summary["omission_count"] != 2:
+            raise AssertionError("batch scan summary lost summary.total or per-entry coverage gaps")
 
         for path in [
             output / "scan/scan-summary.md",
+            output / "scan-batch/scan-summary.md",
             output / "triage/triage.md",
             output / "analyze/analysis.md",
             output / "index out/index-run.md",

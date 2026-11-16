@@ -1,6 +1,6 @@
 # CLI contract
 
-The skill targets SIS CLI 0.70.0 or newer (commands below verified against 0.70.0).
+The skill targets SIS CLI 0.70.0 or newer (commands below verified against 0.71.0).
 
 ## Single file or directory
 
@@ -36,22 +36,44 @@ Use `--emit` side artefacts rather than running the same hostile input twice.
 sis scan INPUT --emit json=report.json --fail-on suspicious
 ```
 
-Gate on `suspicious` (or `malicious`). In 0.70.0 `--fail-on anomalous` does not
-trip on a Suspicious verdict because the gate orders the labels differently from
-the verdict; read `verdict.label` in the JSON if you need the exact label.
+Accepted thresholds in 0.71.0: `none` (default), `suspicious`, `anomalous`,
+`malicious`; there is no `clean`. Labels compare in enum order (`clean` <
+`anomalous` < `suspicious` < `malicious`) and a Clean label whose coverage is
+withheld ranks as Anomalous. Verified on 0.71.0 with a committed fixture that reads
+Anomalous: `--fail-on anomalous` exits 1; `--fail-on suspicious` and `--fail-on
+malicious` exit 0. So `anomalous` is the lowest threshold that catches input sis did
+not fully examine, and `suspicious` does not. (0.70.0 ranked the labels in a
+different order: `--fail-on anomalous` did not trip on Suspicious.) Anomalous is a
+coverage statement, not evidence of a threat: gate on it only as an explicit
+"require fully examined input" policy.
 
 A gate may return a non-zero policy exit after writing the report. Preserve the
 report and distinguish this from a command/configuration failure. Confirm the
 accepted threshold using `sis scan --help` on the installed version.
 
+## Text report and JSON shapes (0.71.0)
+
+The text report starts with `Verdict: <label> (<confidence>, coverage <state>)`,
+state being `complete`, `partial`, `indeterminate` or `unmeasured` (`not computed`
+is never Clean), followed by a `Scope:` line (nodes examined, coverage, gaps).
+
+- Single file JSON: `verdict` (`label`, `score`, `confidence`), `analysis_coverage`
+  (`state`, `omissions[]` with `capability_id`, `reason_id`, `scope`), `findings[]`,
+  `facts[]`, `summary`.
+- Directory (batch) JSON: `summary` (counts only, no verdict), `entries[]` with
+  `verdict_label`, `assurance_scope` (`nodes_examined`, `coverage`, `gaps[]`) and
+  `coverage_withheld` (present only when true), plus `errors[]` for files that
+  failed at batch level and were never examined. No top-level verdict, no per-entry
+  findings.
+
 ## Optional: write the scan into a corpus index (sis 0.71.0 and newer)
 
-`sis scan INPUT --index CORPUS_OR_INDEX_PATH` is opt-in and does not exist in
-0.70.0; a scan is never indexed implicitly. It stores the unfiltered report in the
+`sis scan INPUT --index CORPUS_OR_INDEX_PATH` is opt-in; a scan is never indexed
+implicitly. A new index file is created only with `--create-index`; without it a
+missing path is refused (exit 3). It stores the unfiltered report in the
 existing corpus index (a corpus name from `~/.config/sis/corpora.toml`, or an index
 file path), is idempotent on re-scan of the same content and scanner build, and is
-refused with `--stream`. Check the path: a mistyped index path may create a new,
-empty index. Use it only when the user asked for the result to land in an index;
+refused with `--stream`. Use it only when the user asked for the result to land in an index;
 otherwise keep the JSON report.
 
 ## Version and help

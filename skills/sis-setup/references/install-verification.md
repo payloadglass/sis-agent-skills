@@ -80,6 +80,6 @@ themselves; that is their decision, not something this skill does for them.
 
 ## Version and compatibility
 
-`compatibility.json` at the pack root declares the minimum: 0.70.0 for every skill.
+`compatibility.json` at the pack root declares the minimum: 0.71.0 for every skill.
 `scripts/check_sis.sh` defaults to it. SIS is prerelease (pre-1.0); minor versions can change
 output fields, finding kinds, and verdicts.

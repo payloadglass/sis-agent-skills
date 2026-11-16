@@ -1,9 +1,9 @@
 ---
 name: sis-scan
 description: "Run SIS scans on a local file or directory and preserve machine-readable evidence. Use when an agent is asked to scan, inspect, classify, or gate suspicious content with SIS, produce JSON or SARIF, compare fast and deep posture only when requested, or explain whether the scan was complete. Do not use for interpreting an existing report without running SIS; use sis-triage instead."
-compatibility: "Requires SIS CLI 0.70.0 or newer and local filesystem access."
+compatibility: "Requires SIS CLI 0.71.0 or newer and local filesystem access."
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
   runtime: "cli"
   role: "scanner-operator"
 ---
@@ -27,7 +27,7 @@ Use `sis-analyze` for a baseline-versus-deep investigation of one sample.
 
 1. Confirm the input path exists and is readable.
 2. Resolve the executable from `SIS_BIN`, falling back to `sis` on `PATH`.
-3. Record `sis --version`. If `sis` is missing or older than 0.70.0, stop and use
+3. Record `sis --version`. If `sis` is missing or older than 0.71.0, stop and use
    `sis-setup`; do not install anything without the user's approval.
 4. Create a dedicated output directory that is not inside the scanned directory.
 5. Never execute, render, preview, or open the sample in its native application.
@@ -41,8 +41,10 @@ python3 scripts/run_scan.py INPUT --output-dir reports/sis-scan/RUN_ID
 ```
 
 Add `--deep` only when requested or justified by a follow-up analysis. Add
-`--fail-on suspicious` or `--fail-on malicious` only for an explicit gate; a
-gate exit is a policy result, not a scanner crash.
+`--fail-on suspicious`, `--fail-on anomalous` or `--fail-on malicious` only for an
+explicit gate; a gate exit is a policy result, not a scanner crash. Labels rank
+Clean < Anomalous < Suspicious < Malicious, so `anomalous` is the lowest
+threshold that also catches inputs sis could not fully examine.
 
 The direct CLI contract is documented in [references/cli-contract.md](references/cli-contract.md).
 
@@ -51,7 +53,10 @@ The direct CLI contract is documented in [references/cli-contract.md](references
 1. Preserve the raw SIS JSON unchanged.
 2. Identify whether the report is single-file or batch.
 3. Record verdict label, score, confidence, profile, and SIS version when present.
-4. Inspect `analysis_coverage` and every omission before interpreting absent findings.
+4. Read the `Verdict:` line (text output) or `verdict.label` plus `analysis_coverage`
+   (single-file JSON), and every omission, before interpreting absent findings.
+   Batch (directory) JSON has no top-level verdict: read `entries[].verdict_label`,
+   `entries[].assurance_scope` and `entries[].coverage_withheld`.
 5. Record failed or skipped analysis separately from suspicious content.
 6. Cite finding kinds exactly as emitted in `findings[].kind`; never invent names.
 7. Separate scan observations from operator policy decisions.

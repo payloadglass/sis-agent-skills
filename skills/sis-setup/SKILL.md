@@ -1,9 +1,9 @@
 ---
 name: sis-setup
 description: "Check whether a usable, verified `sis` CLI is installed and, only with the user's explicit approval, install or update it from the official release with checksum and attestation verification. Use before the first SIS scan on a machine, when `sis` is not found, when another SIS skill reports a version below its minimum, or when the user asks how to install, verify, or update SIS. Do not use to scan, triage, query, or index files; use the other SIS skills once `sis --version` meets the minimum."
-compatibility: "Needs a POSIX shell for the helper scripts (Windows: manual PowerShell steps). Network access only for the downloads the user approves; `gh` is optional but needed to verify build provenance. Targets sis 0.70.0 and newer releases."
+compatibility: "Needs a POSIX shell for the helper scripts (Windows: manual PowerShell steps). Network access only for the downloads the user approves; `gh` is optional but needed to verify build provenance. Targets sis 0.71.0 and newer releases."
 metadata:
-  version: "0.2.0"
+  version: "0.3.0"
   runtime: "cli"
   role: "setup-and-verification"
 ---
@@ -25,7 +25,7 @@ binary, say so and stop; do not look for a hosted alternative.
 ## Step 1: detect and compare (read-only, no approval needed)
 
 ```bash
-scripts/check_sis.sh                    # default minimum for every skill in the pack (0.70.0)
+scripts/check_sis.sh                    # default minimum for every skill in the pack (0.71.0)
 ```
 
 The helper runs `sis --version` and nothing else. Exit codes: `0` usable,
@@ -114,7 +114,7 @@ the PowerShell steps in the reference. macOS and Windows binaries are unsigned,
 so the first launch may show a Gatekeeper or SmartScreen prompt; that prompt is
 the user's decision, not yours.
 
-**Known issue in 0.70.0 (macOS):** `sis sanitize release` fails to start its worker
+**Known issue in 0.70.0 and 0.71.0 (macOS; tracked as F4520):** `sis sanitize release` fails to start its worker
 (`Invalid argument (os error 22)`) and refuses; `sanitize plan` and `sanitize
 apply` work, and scanning is unaffected. A refusal is never evidence that a file is
 safe. Check the release notes of the version you install for the current status.

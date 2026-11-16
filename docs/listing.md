@@ -54,7 +54,7 @@ change between minor versions. SIS itself is distributed as compiled binaries fr
   (Claude Code, Codex CLI or a comparable local agent).
 - A platform SIS ships for: Linux x86_64 or aarch64 (glibc 2.36 or newer), macOS
   (Apple Silicon or Intel), Windows x86_64.
-- `sis` 0.70.0 or newer, or permission for
+- `sis` 0.71.0 or newer, or permission for
   the setup skill to fetch it from GitHub.
 - The GitHub CLI (`gh`) is recommended: it is what verifies the build attestation.
   Without it the setup skill says release provenance is **not** verified.
@@ -62,7 +62,7 @@ change between minor versions. SIS itself is distributed as compiled binaries fr
   supported.** The skills do not fall back to uploading your file to a service.
   (How common that limit is on each host is the pending measurement in
   `docs/hosted-sandbox-protocol.md`; this requirement text stays regardless.)
-- macOS note, SIS 0.70.0: `sis sanitize release` does not start its worker on macOS
+- macOS note, SIS 0.70.0 and 0.71.0 (F4520, fix planned for 0.71.1): `sis sanitize release` does not start its worker on macOS
   and refuses. Scanning and the other skills are unaffected.
 
 ## Install: Claude Code

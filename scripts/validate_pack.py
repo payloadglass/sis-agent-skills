@@ -106,10 +106,10 @@ def main() -> int:
     if compatibility.get("pack_version") != manifest.get("version"):
         fail("manifest and compatibility pack versions differ")
     minimum = compatibility.get("sis", {}).get("minimum")
-    if minimum != "0.70.0":
-        fail("CLI pack must declare SIS 0.70.0 as its minimum supported version")
+    if minimum != "0.71.0":
+        fail("CLI pack must declare SIS 0.71.0 as its minimum supported version")
     if "skill_minimums" in compatibility.get("sis", {}):
-        fail("v0.2.0 has a single pack minimum; skill_minimums is not used")
+        fail("v0.3.0 has a single pack minimum; skill_minimums is not used")
     if compatibility.get("network", {}).get("telemetry") is not False:
         fail("compatibility.json must declare telemetry false")
     # Each SKILL.md states the minimum that compatibility.json declares for it.
