@@ -244,7 +244,24 @@ def check_setup_scripts(tmp: Path, fake_sis: Path) -> None:
         raise AssertionError("an archive with an unexpected member was extracted")
 
 
+def self_test_batch_summaries() -> None:
+    """Degenerate batch reports must read as unknown or incomplete, never crash or read Clean."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location("run_scan", ROOT / "skills/sis-scan/scripts/run_scan.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    empty = {"entries": [], "errors": [{"path": "x.pdf", "error": "unreadable"}]}
+    if module.verdict_summary(empty)[0] is not None or "1 failed" not in module.coverage_summary(empty)[0]:
+        raise AssertionError("an all-errors batch must have no verdict and incomplete coverage")
+    unlabeled = {"entries": [{"path": "a", "verdict_label": "Clean", "assurance_scope": {"coverage": "complete"}},
+                             {"path": "b", "assurance_scope": {"coverage": "complete"}}], "errors": []}
+    if module.verdict_summary(unlabeled)[0] != "unknown" or not module.coverage_summary(unlabeled)[0].startswith("incomplete"):
+        raise AssertionError("an entry without a verdict label must read as unknown and incomplete")
+
+
 def main() -> int:
+    self_test_batch_summaries()
     with tempfile.TemporaryDirectory(prefix="sis-agent-skills-") as tmp_raw:
         tmp = Path(tmp_raw)
         binary = tmp / "bin" / "sis"

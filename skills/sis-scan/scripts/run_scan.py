@@ -82,7 +82,8 @@ def verdict_summary(report: dict) -> tuple[str | None, object, object]:
         # An entry without a string label is an unread verdict: report it as "unknown" (worst).
         labels = [e["verdict_label"] if isinstance(e.get("verdict_label"), str) else "unknown"
                   for e in batch_entries(report)]
-        worst = max(labels, key=lambda l: LABEL_RANK.get(l.lower(), len(LABEL_RANK)))  # unknown label: worst, never hidden if labels else None
+        # An unrecognised label ranks worst, so it is never hidden. No entries: no verdict.
+        worst = max(labels, key=lambda l: LABEL_RANK.get(l.lower(), len(LABEL_RANK))) if labels else None
         return worst, None, None
     verdict = report.get("verdict")
     if isinstance(verdict, dict):
