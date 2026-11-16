@@ -10,7 +10,7 @@ sis corpus status NAME --index INDEX
 Confirm the installed command syntax with `--help`; do not guess alternate
 spellings.
 
-Verified against sis 0.70.0. `sync` also accepts `--manifest corpora.toml` in place
+Verified against sis 0.71.0. `sync` also accepts `--manifest corpora.toml` in place
 of `--index`/`--location`, `--reports JSONL` to import saved reports, and `--prune`.
 
 ## Identity model

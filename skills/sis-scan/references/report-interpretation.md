@@ -11,7 +11,49 @@
 
 Review `analysis_coverage` before interpreting the absence of findings. Preserve
 its state, omissions, and capability identifiers. A report may be partial even
-when the verdict is Clean or Anomalous.
+when the verdict is Clean.
+
+## What the labels mean (sis 0.71)
+
+| label | meaning |
+|---|---|
+| Clean | nothing reached a warning threshold, over the scope stated beside it |
+| Anomalous | not fully examined: a coverage statement, not a weaker threat claim |
+| Suspicious | warn and require review; a person or policy decides |
+| Malicious | evidence of malice |
+
+- A file that sis could not examine (undecodable or undecryptable streams, a
+  large unread proportion) reads **Anomalous**, not Clean. In 0.71.0 a PDF with at
+  least 25% unread bytes floors to Anomalous
+  (`unread_proportion_constrained_analysis`). This is NOT evidence of a threat
+  and must not be reported as one; it is also not a pass.
+- Encrypted PDFs: streams sis cannot decrypt are recorded as not examined, and no
+  finding is built on ciphertext. Report them as unexamined content.
+- Do not read Anomalous as "probably fine", and do not block on Suspicious alone;
+  a person or policy decides.
+- The text report starts with `Verdict: <label> (<confidence>, coverage <state>)`.
+  `not computed` is never Clean.
+- `--fail-on` ranks labels Clean < Anomalous < Suspicious < Malicious and ranks a
+  coverage-withheld Clean as Anomalous. `--fail-on anomalous` is the lowest
+  threshold that catches it.
+- Omission reasons are typed (for example `stream:decode_failed`,
+  `extraction:budget_exceeded`, `extraction:content_unreachable`,
+  `interpretation:not_enumerated`, `member:findings_withheld`,
+  `detector_cost_excluded`). Quote the reason as emitted; it says what was not
+  read. A `detector_cost_excluded` omission means a deep-only detector did not run
+  at the default posture.
+- Batch entries expose this as `assurance_scope.gaps` and `coverage_withheld`.
+
+## Scoped assurance (never claim safety)
+
+Clean means "nothing found in what sis examined", never "safe". Never claim an
+input is safe. Always state the scope (nodes examined, coverage state) and what
+was not examined. Absence of findings is not absence of risk.
+
+## Known limitation
+
+On macOS, `sis sanitize release` refuses in 0.71.0 (the isolated CDR worker
+cannot start; fix tracked as F4520). Scanning, `doctor` and `sanitize apply` work.
 
 Also inspect provider participation, parser failures, timeout markers, recursive
 member status, and asset-graph traversal coverage when present. These surfaces

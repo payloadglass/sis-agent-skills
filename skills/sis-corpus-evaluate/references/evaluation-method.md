@@ -11,6 +11,11 @@ Prioritize:
 4. material runtime degradation on the same inputs and options;
 5. benign samples moving upward, especially across operational thresholds.
 
+Label order is Clean < Anomalous < Suspicious < Malicious. A move Clean -> Anomalous
+across a sis upgrade is usually a coverage-honesty change (sis 0.71 floors
+mostly-unread PDFs to Anomalous), not a detection regression or a new threat; check
+`assurance_scope.gaps` and `coverage_withheld` before classifying it.
+
 A verdict delta without comparable run identity is configuration drift, not a
 confirmed engine regression.
 

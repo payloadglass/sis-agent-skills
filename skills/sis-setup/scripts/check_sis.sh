@@ -4,7 +4,7 @@
 set -u
 
 sis_bin="${SIS_BIN:-sis}"
-minimum="0.70.0"
+minimum="0.71.0"
 
 usage() {
   echo "usage: check_sis.sh [--minimum X.Y.Z] [--sis-bin PATH]" >&2
@@ -22,7 +22,7 @@ done
 
 semver_re='^([0-9]+)\.([0-9]+)\.([0-9]+)(-[0-9A-Za-z.-]+)?$'
 if [[ ! "$minimum" =~ $semver_re ]]; then
-  echo "--minimum must look like 0.70.0" >&2
+  echo "--minimum must look like 0.71.0" >&2
   exit 2
 fi
 
