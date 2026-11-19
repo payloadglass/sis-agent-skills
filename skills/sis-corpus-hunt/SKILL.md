@@ -3,7 +3,7 @@ name: sis-corpus-hunt
 description: "Hunt an existing SIS corpus index for finding distributions, metadata, identities, coverage gaps, bindings, or repeated embedded assets. Use when an agent must find similar samples, count exact SIS finding kinds, pivot on producer or creator families, locate a content digest, or extract an indexed asset. Do not use to build the index or claim ground truth from corpus membership."
 compatibility: "Requires SIS CLI 0.71.0 or newer with corpus query, occurrences, and optional extract surfaces."
 metadata:
-  version: "0.3.0"
+  version: "0.3.1"
   runtime: "cli"
   role: "threat-hunter"
 ---

@@ -1,21 +1,12 @@
 name: Release SIS Agent Skills
 
 on:
-  pull_request:
-    paths:
-      - 'skills/**'
-      - 'scripts/**'
-      - 'evals/**'
-      - 'manifest.json'
-      - 'compatibility.json'
-      - '.claude-plugin/**'
-      - '.github/workflows/release.yml'
   workflow_dispatch:
     inputs:
       version:
         description: Pack version without a leading v
         required: true
-        default: 0.3.0
+        default: 0.3.1
   push:
     tags:
       - 'v*'
@@ -46,7 +37,7 @@ jobs:
           elif [[ "${GITHUB_EVENT_NAME}" == "workflow_dispatch" ]]; then
             version="${{ inputs.version }}"
           else
-            version="0.3.0-pr${{ github.event.pull_request.number }}"
+            echo "refusing to build outside a tag or workflow_dispatch" >&2; exit 1
           fi
           [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]
           echo "version=$version" >> "$GITHUB_OUTPUT"

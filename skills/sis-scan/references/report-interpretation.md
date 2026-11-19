@@ -63,7 +63,7 @@ boolean.
 ## Finding-kind discipline
 
 Use exact `findings[].kind` values from the report. For format capability checks,
-prefer the installed CLI's `sis explain-format FORMAT --json` surface. Do not
+prefer the installed CLI's `sis explain format FORMAT --json` surface. Do not
 recall finding names from memory or infer them from prose.
 
 ## Batch reports

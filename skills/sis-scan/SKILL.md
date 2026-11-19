@@ -3,7 +3,7 @@ name: sis-scan
 description: "Run SIS scans on a local file or directory and preserve machine-readable evidence. Use when an agent is asked to scan, inspect, classify, or gate suspicious content with SIS, produce JSON or SARIF, compare fast and deep posture only when requested, or explain whether the scan was complete. Do not use for interpreting an existing report without running SIS; use sis-triage instead."
 compatibility: "Requires SIS CLI 0.71.0 or newer and local filesystem access."
 metadata:
-  version: "0.3.0"
+  version: "0.3.1"
   runtime: "cli"
   role: "scanner-operator"
 ---

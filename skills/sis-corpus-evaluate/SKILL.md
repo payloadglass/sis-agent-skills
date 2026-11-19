@@ -3,7 +3,7 @@ name: sis-corpus-evaluate
 description: "Evaluate a corpus with SIS, compare a previous batch report, identify verdict or finding regressions, surface scan errors and coverage changes, and rank evidence-backed follow-up candidates. Use for release evaluation, detector calibration, corpus baselines, regression spotting, and case-study candidate generation. Do not use for merely syncing an index or hunting one known value."
 compatibility: "Requires SIS CLI 0.71.0 or newer with directory scan JSON emission."
 metadata:
-  version: "0.3.0"
+  version: "0.3.1"
   runtime: "cli"
   role: "corpus-evaluation-engineer"
 ---
