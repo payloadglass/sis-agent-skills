@@ -14,6 +14,11 @@ the earliest supported cause:
 
 Do not assume the first textual difference is causal.
 
+A verdict of Anomalous means not fully examined; it is not a weaker threat claim.
+Compare which omissions (`analysis_coverage.omissions[].reason_id`) each posture
+reports before comparing labels. Clean means nothing found in what was examined,
+never safe.
+
 ## Strong evidence
 
 Prioritize evidence that is:

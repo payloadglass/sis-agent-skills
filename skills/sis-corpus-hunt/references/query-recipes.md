@@ -37,8 +37,22 @@ sis corpus query NAME --index INDEX \
   --json
 ```
 
-Optional filters exposed by current SIS versions may include `--value`, `--role`,
-`--max-depth`, `--order`, and `--limit`. Confirm them with `--help` before use.
+Optional filters, verified on 0.71.0: `--value`, `--role` (observation families
+only), `--max-depth`, `--order asc|desc`, `--limit`, `--meta-key` (the
+`finding_meta` family). `--value` is an error for the `finding` family. Confirm
+them with `--help` before use.
+
+## Cross-sample clustering (version-guarded)
+
+```bash
+sis scan CORPUS_DIR --format jsonl-findings > findings.jsonl     # or a --format json report
+sis corpus correlate findings --input findings.jsonl
+```
+
+0.71.0 `correlate` counts what it read, accepted and skipped, refuses with a non-zero
+exit when it skipped everything, and `--allow-skips` overrides that for a deliberately
+partial input (0.70.0 could silently report zero clusters). Report accepted
+and skipped counts either way.
 
 ## Occurrence pivot
 

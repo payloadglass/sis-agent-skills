@@ -105,7 +105,7 @@ def main() -> int:
         "",
         f"- Report: {md_code(report_path)}",
         f"- Report SHA-256: {md_code(observed['report_sha256'])}",
-        f"- SIS version: {md_code(observed['sis_version'] or 'unknown')}",
+        f"- SIS version: {md_code(observed['sis_version'] or 'not recorded in the report; take it from the scan run (scan-summary.json)')}",
         f"- Verdict: {md_code(v.get('label') or 'unknown')}",
         f"- Score: {md_code(v.get('score') if v.get('score') is not None else 'unknown')}",
         f"- Confidence: {md_code(v.get('confidence') or 'unknown')}",
@@ -121,6 +121,9 @@ def main() -> int:
     else:
         lines.append("- No findings were present in the report. This is not, by itself, a safety conclusion.")
     lines += ["", "## Analysis gaps", ""]
+    if str(v.get("label")).lower() == "anomalous":
+        lines.append("- Verdict Anomalous means sis did not fully examine this input. It is a coverage statement, not evidence of a threat, and it is not a clean result.")
+    lines.append("- Clean means nothing was found in what sis examined; it never means safe. Report what was not examined.")
     omissions = cov.get("omissions") or []
     if omissions:
         for item in omissions:

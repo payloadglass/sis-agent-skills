@@ -1,9 +1,9 @@
 ---
 name: sis-corpus-hunt
 description: "Hunt an existing SIS corpus index for finding distributions, metadata, identities, coverage gaps, bindings, or repeated embedded assets. Use when an agent must find similar samples, count exact SIS finding kinds, pivot on producer or creator families, locate a content digest, or extract an indexed asset. Do not use to build the index or claim ground truth from corpus membership."
-compatibility: "Requires SIS CLI 0.6.6 or newer with corpus query, occurrences, and optional extract surfaces."
+compatibility: "Requires SIS CLI 0.71.0 or newer with corpus query, occurrences, and optional extract surfaces."
 metadata:
-  version: "0.1.0"
+  version: "0.3.0"
   runtime: "cli"
   role: "threat-hunter"
 ---
@@ -19,7 +19,7 @@ filters so counts cannot be mistaken for unique files or unique content.
 - Which producer or creator families co-occur with a signal?
 - Where does this content digest occur at any nesting depth?
 - Which analysis capabilities are commonly omitted?
-- Can an indexed nested asset be safely re-materialized for further scanning?
+- Can an indexed nested asset be re-materialized for further scanning, under a supported materialization class?
 
 ## Procedure
 
@@ -30,7 +30,7 @@ filters so counts cannot be mistaken for unique files or unique content.
 5. Run with `--json` and preserve the query result unchanged.
 6. Separate counts of items, occurrences, and distinct content.
 7. For a content digest, use `occurrences`; use `extract` only when the installed
-   CLI reports a supported materialization class and the output path is safe.
+   CLI reports a supported materialization class and the output path is confined to the intended output directory.
 8. Validate every cited finding kind directly from query or scan output.
 
 The generic query wrapper is:
@@ -47,6 +47,18 @@ scripts/query_index.sh \
 
 Use [references/query-recipes.md](references/query-recipes.md) for supported
 query patterns and FN/FP discipline.
+
+## Version-guarded notes
+
+- `sis corpus extract NAME --index INDEX --location DIR --source KEY --asset-path PATH --out FILE`
+  needs the corpus location as well as the indexed address.
+- **Cross-sample clustering (`sis corpus correlate ...`).** In 0.71.0
+  `correlate findings --input FILE` reads report-shaped or `{path, finding}`
+  (`sis scan --format jsonl-findings`) input and exits non-zero ("nothing accepted:
+  N read, 0 accepted, M skipped") when it skipped every record; `--allow-skips`
+  accepts that and the skips must then be reported. (0.70.0 instead reported zero
+  clusters for unrecognised input.) A zero-cluster result is not "nothing shared".
+  Always state how many inputs were accepted and skipped.
 
 ## Required output
 

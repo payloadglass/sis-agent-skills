@@ -36,7 +36,41 @@ def get_version(binary: str) -> str:
     return (result.stdout or result.stderr).strip()
 
 
+# sis 0.71 ranks labels in enum order; Anomalous (not fully examined) is below Suspicious.
+LABEL_RANK = {"clean": 0, "anomalous": 1, "suspicious": 2, "malicious": 3}
+
+
+def batch_entries(report: dict) -> list[dict]:
+    """Directory scans emit a batch report: per-file `entries`, no top-level verdict."""
+    value = report.get("entries")
+    return [e for e in value if isinstance(e, dict)] if isinstance(value, list) else []
+
+
 def coverage_summary(report: dict) -> tuple[str | None, list[dict]]:
+    if "entries" in report:
+        incomplete = []
+        entries = batch_entries(report)
+        for entry in entries:
+            scope = entry.get("assurance_scope") if isinstance(entry.get("assurance_scope"), dict) else {}
+            # Missing coverage data is unknown, not complete.
+            if (entry.get("coverage_withheld") or scope.get("coverage") != "complete"
+                    or not isinstance(entry.get("verdict_label"), str)):
+                incomplete.append({
+                    "path": entry.get("path"),
+                    "coverage": scope.get("coverage"),
+                    "coverage_withheld": bool(entry.get("coverage_withheld")),
+                    "gaps": scope.get("gaps", []),
+                })
+        # Files that failed at batch level are in `errors`, not `entries`: never examined.
+        errors = report.get("errors") if isinstance(report.get("errors"), list) else []
+        for error in errors:
+            incomplete.append({"path": error.get("path") if isinstance(error, dict) else None,
+                               "coverage": "not examined", "error": error})
+        if not entries and not errors:
+            return "incomplete (batch report has no entries)", incomplete
+        if not incomplete:
+            return "complete", incomplete
+        return f"incomplete ({len(incomplete) - len(errors)} of {len(entries)} entries partial; {len(errors)} failed)", incomplete
     coverage = report.get("analysis_coverage") or {}
     state = coverage.get("state") if isinstance(coverage, dict) else None
     omissions = coverage.get("omissions", []) if isinstance(coverage, dict) else []
@@ -44,6 +78,13 @@ def coverage_summary(report: dict) -> tuple[str | None, list[dict]]:
 
 
 def verdict_summary(report: dict) -> tuple[str | None, object, object]:
+    if "entries" in report:
+        # An entry without a string label is an unread verdict: report it as "unknown" (worst).
+        labels = [e["verdict_label"] if isinstance(e.get("verdict_label"), str) else "unknown"
+                  for e in batch_entries(report)]
+        # An unrecognised label ranks worst, so it is never hidden. No entries: no verdict.
+        worst = max(labels, key=lambda l: LABEL_RANK.get(l.lower(), len(LABEL_RANK))) if labels else None
+        return worst, None, None
     verdict = report.get("verdict")
     if isinstance(verdict, dict):
         return verdict.get("label"), verdict.get("score"), verdict.get("confidence")
@@ -60,7 +101,7 @@ def main() -> int:
     parser.add_argument("input", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--deep", action="store_true")
-    parser.add_argument("--fail-on", choices=("suspicious", "malicious"))
+    parser.add_argument("--fail-on", choices=("suspicious", "anomalous", "malicious"))
     parser.add_argument("--sis-bin", default=os.environ.get("SIS_BIN", "sis"))
     args = parser.parse_args()
 
@@ -104,7 +145,7 @@ def main() -> int:
         if isinstance(findings, list):
             findings_count = len(findings)
         elif isinstance(report.get("summary"), dict):
-            findings_count = report["summary"].get("findings_count")
+            findings_count = report["summary"].get("total", report["summary"].get("findings_count"))
 
     summary = {
         "input": str(source),
@@ -152,7 +193,9 @@ def main() -> int:
     if not report_path.exists():
         lines.append("- SIS did not produce the requested JSON report; inspect stderr before interpreting the exit code.")
     if omissions:
-        lines.append("- Analysis omissions are present; absence of findings is not complete negative evidence.")
+        lines.append("- Coverage was incomplete; Clean here means nothing found in what sis examined, not that the input is safe. Report what was not examined.")
+    if label and label.lower() == "anomalous":
+        lines.append("- Anomalous means not fully examined; it is a coverage statement, not evidence of a threat.")
     if result.returncode != 0 and args.fail_on and report_path.exists():
         lines.append("- A non-zero result may be the requested verdict gate; confirm against the report and stderr.")
     if len(lines) == 16:
