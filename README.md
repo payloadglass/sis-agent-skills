@@ -47,7 +47,7 @@ python3 -I scripts/smoke_test.py
 ## Build release ZIPs
 
 ```bash
-python3 -I scripts/build_release.py --version 0.3.0
+python3 -I scripts/build_release.py --version 0.3.1
 ```
 
 This produces:

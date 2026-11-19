@@ -34,7 +34,7 @@ against existing cases when that corpus is available.
 ## Finding vocabulary
 
 Use exact kinds emitted by scan JSON. For capability review, build a valid-kind
-set from `sis explain-format FORMAT --json` across relevant canonical formats.
+set from `sis explain format FORMAT --json` across relevant canonical formats.
 Do not use source-code grep as the sole authority because runner- and
 analysis-owned kinds may live outside detector source files.
 

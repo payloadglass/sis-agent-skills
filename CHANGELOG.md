@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.3.1
+
+Accuracy release, verified against the released sis 0.71.0 binary (SHA256SUMS and
+`gh attestation verify` checked; only `--help`, `docs`, `explain` and scans of
+self-authored benign fixtures were run).
+
+- Adds `sis-query` (the eighth skill), reconciled to 0.71.0. Drift fixed relative to the
+  held draft: 0.71.0 has no `sis query --contract-version` or `--describe` (the helper now
+  gates on `sis --version` and records the answer's `contract` object); the query pipeline
+  grammar and `--format dot` are rejected; `--where` works on `findings` spellings;
+  `policy.active`, `catalog`, `trailer`, `verdict`, `why`, `tree` and `intent` are removed
+  (`QUERY_REMOVED`, exit 3); exit 5 is not documented for `sis query`.
+- `sis explain-format` is now `sis explain format` everywhere (the canonical form).
+- The release workflow no longer runs on pull requests; it runs for a pushed `v*` tag
+  or a manual dispatch only.
+
 ## 0.3.0
 
 Verified against the released sis 0.71.0 (minimum and tested against 0.71.0). 0.71

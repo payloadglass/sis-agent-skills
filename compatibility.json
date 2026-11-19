@@ -1,5 +1,5 @@
 {
-  "pack_version": "0.3.0",
+  "pack_version": "0.3.1",
   "runtime_option": "cli-only",
   "sis": {
     "minimum": "0.71.0",
@@ -17,7 +17,7 @@
       "sis corpus occurrences NAME --index PATH --content-digest DIGEST --json",
       "sis corpus extract NAME --index PATH --location DIRECTORY --source KEY --asset-path PATH --out FILE",
       "sis corpus correlate findings --input FILE [--allow-skips]",
-      "sis explain-format FORMAT --json",
+      "sis explain format FORMAT --json",
       "sis query QUERY INPUT --format FORMAT --where PREDICATE",
       "sis query QUERY --from-report REPORT --format FORMAT"
     ]

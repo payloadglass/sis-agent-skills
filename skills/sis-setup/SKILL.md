@@ -3,7 +3,7 @@ name: sis-setup
 description: "Check whether a usable, verified `sis` CLI is installed and, only with the user's explicit approval, install or update it from the official release with checksum and attestation verification. Use before the first SIS scan on a machine, when `sis` is not found, when another SIS skill reports a version below its minimum, or when the user asks how to install, verify, or update SIS. Do not use to scan, triage, query, or index files; use the other SIS skills once `sis --version` meets the minimum."
 compatibility: "Needs a POSIX shell for the helper scripts (Windows: manual PowerShell steps). Network access only for the downloads the user approves; `gh` is optional but needed to verify build provenance. Targets sis 0.71.0 and newer releases."
 metadata:
-  version: "0.3.0"
+  version: "0.3.1"
   runtime: "cli"
   role: "setup-and-verification"
 ---

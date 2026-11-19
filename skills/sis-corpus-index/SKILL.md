@@ -3,7 +3,7 @@ name: sis-corpus-index
 description: "Build, incrementally update, verify, and document a persistent SIS corpus forensic index. Use when an agent must index a directory, sync new or changed items, choose index and corpus identities, inspect status, or diagnose indexing gaps. Do not use to hunt an already-built index or to evaluate detector quality; use sis-corpus-hunt or sis-corpus-evaluate."
 compatibility: "Requires SIS CLI 0.71.0 or newer with the corpus command surface enabled."
 metadata:
-  version: "0.3.0"
+  version: "0.3.1"
   runtime: "cli"
   role: "corpus-engineer"
 ---
