@@ -1,7 +1,7 @@
 # SIS query session
 
 - SIS version: `<fill in>`
-- Contract version: `<fill in>`
+- Answer contract (`contract` object in the JSON): `<fill in>`
 - Input: `<path or --from-report target>`
 
 ## Queries run

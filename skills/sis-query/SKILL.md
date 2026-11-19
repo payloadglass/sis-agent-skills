@@ -1,7 +1,7 @@
 ---
 name: sis-query
 description: "Run ad-hoc `sis query` projections over an analysed file's findings, structure, and content — a specific finding kind, a chain, an object subtree, a stream, or an asset-path selector. Use when an agent needs a targeted, reproducible projection rather than a full scan or triage verdict, including filtering with `--where`, reading saved reports with `--from-report`, or walking the nested asset graph with a selector. Do not use to run an initial scan (use sis-scan) or to produce an operational triage record (use sis-triage); do not use for corpus-wide hunting across many samples (use sis-corpus-hunt)."
-compatibility: "Requires SIS CLI 0.71.0 or newer: the unified `sis query` front door (query contract language >= 2), --describe, --contract-version, and --from-report semantic-snapshot validation."
+compatibility: "Requires SIS CLI 0.71.0 or newer: the `sis query` front door (envelope contract language 2, result 4) and --from-report semantic-snapshot validation. Verified against the released 0.71.0 binary. `--describe`, `--contract-version` and the pipeline query grammar are not in 0.71.0."
 metadata:
   version: "0.1.0"
   runtime: "cli"
@@ -24,8 +24,8 @@ classification the result does not already state.
   asset graph with a path selector (`**/pe:*`, `**/[format=pe]/text`);
 - the user wants to re-query a saved report (`--from-report`) without
   rerunning detectors;
-- the user asks what the installed build's query contract version or
-  supported fields are (`--describe`, `--contract-version`).
+- the user asks which query contract the installed build speaks (read the
+  `contract` object in any JSON answer, and `sis --version`).
 
 Use `sis-scan` first when no report or live file access exists yet. Use
 `sis-triage` when the task is "turn this report into an operational verdict
@@ -35,10 +35,11 @@ for aggregate questions across many samples in a pre-built index, not one file.
 ## Preconditions
 
 1. Resolve the executable from `SIS_BIN`, falling back to `sis` on `PATH`.
-2. Record `sis --version` and `sis query --contract-version` (language/result
-   versions) alongside every result — a query answer is only comparable to
-   another run with the same contract. If `--contract-version` is rejected
-   (`unexpected argument`), the build predates sis 0.71.0: stop and report the
+2. Record `sis --version` alongside every result, and the `contract`
+   object (`{"language": 2, "result": 4}` on 0.71.0) that every JSON/JSONL/YAML
+   answer carries; a query answer is only comparable to another run with the
+   same contract. sis 0.71.0 has no `sis query --contract-version` or
+   `--describe`. If the build is older than 0.71.0, stop and report the
    version mismatch; do not fall back to guessed spellings. The `sis-setup`
    skill covers checking and updating the binary.
 3. Confirm the input path exists and is readable, or that the `--from-report`
@@ -48,10 +49,13 @@ for aggregate questions across many samples in a pre-built index, not one file.
 
 ## Command shape
 
-The query text is either a legacy spelling (`findings`, `chains`, `pages`, an
-asset-path selector) or the engine's own pipeline grammar (a root relation,
-then `|`-separated stages). Run `sis query --describe --format json` before
-writing a pipeline by hand; do not invent relations or fields.
+The query text is a namespace spelling (`findings`, `chains`, `urls`, `pages`)
+or an asset-path selector. On 0.71.0 the answer for `findings`-family
+spellings comes from the query engine and a stderr `note:` names the canonical
+pipeline form; the pipeline grammar itself is NOT accepted as input on 0.71.0
+(`items | urls | count urls` returns `QUERY_SYNTAX_ERROR`, exit 2). Do not
+write pipelines (requires a later sis than 0.71.0; not verified). Do not
+invent namespaces or fields: take them from `sis docs query` and the result.
 
 ```bash
 sis query findings sample.pdf --format json
@@ -59,7 +63,6 @@ sis query findings.high sample.pdf --where "confidence == 'Strong'" --format jso
 sis query chains sample.pdf --chain-summary events --format json
 sis query '**/[format=pe]/sha256' bundle.zip --format json
 sis query findings --from-report report.json --format json
-sis query "items | urls | count urls" sample.pdf --format json
 ```
 
 With two positionals the **query comes first**, then the input. A single
@@ -88,12 +91,14 @@ records the exit code and any structured error (`error_code`,
 
 1. Preserve the raw output exactly; do not reformat or truncate a JSON result
    before quoting it.
-2. Check the process exit code first: 0 is the only success. Exit 5
-   (`ENGINE_ANSWER_INCOMPLETE`) means "answered, but incomplete": report the
-   answer as incomplete, never as complete or empty. A structured
-   error (`result.status == "error"` with `result.error_code`) is printed in
-   every format and the process still exits non-zero — report the
-   `error_code`, don't guess at what it means from prose alone.
+2. Check the process exit code first: 0 with a `.result` that is not an
+   error object is the only success. A structured error
+   (`result.status == "error"` with `result.error_code`) is printed in every
+   format and the process exits non-zero (2 bad query or unsupported
+   projection, 3 other failure, 4 unreadable report). Report the
+   `error_code`; do not guess at what it means from prose alone. Any other
+   exit code (for example 5) is undocumented for `sis query` on 0.71.0:
+   report the answer as incomplete, never as complete or empty.
 3. If the envelope carries `excluded_unknown` (count above zero), that many
    distinct subjects were excluded because a filtered field was never
    recorded for them — report this alongside the result count. It is not the
@@ -115,7 +120,7 @@ Use [references/query-recipes.md](references/query-recipes.md)'s "Three-valued
 
 ## Required output
 
-- the exact command, `sis query --contract-version` output, and SIS version;
+- the exact command, the SIS version, and the answer's `contract` object;
 - the unmodified raw result (JSON/JSONL/CSV/text as requested);
 - exit code, and `error_code` + `excluded_unknown` when present;
 - a short note on what the query answers and does not answer.
@@ -138,10 +143,11 @@ summary of a query session with several related queries.
 - A query result is one projection, not a scan verdict. An empty or low-count
   result does not show the file is safe; keep coverage and omissions from the
   underlying report visible when summarising.
-- On a ported spelling `--where` is refused with a named reason; use the
-  engine's own `| where` pipeline stage instead of retrying with other flags.
-- Do not invent a field, relation, or finding kind not present in
-  `sis query --describe`'s registry or in the result itself.
+- `--where` is accepted on `findings`-family spellings and `chains` live and
+  from a report; any other namespace may refuse it. Read the refusal, do not
+  retry with other flags.
+- Do not invent a field, namespace, or finding kind not present in
+  `sis docs query` or in the result itself.
 - `/text` and `/bytes` asset-selector terminals need live materialised bytes;
   `/bytes` additionally requires `--extract-to`. Never execute, render, or
   open bytes extracted this way.
@@ -149,8 +155,7 @@ summary of a query session with several related queries.
   `--where`) refuses outright if any selected subject is unknown rather than
   silently extracting a subset — treat that refusal as correct behaviour, not
   a bug to route around.
-- `policy.active` describes the CURRENT process's policy even under
-  `--from-report`; it is not the report's own original policy provenance
-  (read the report's `policy` field for that).
+- The current process policy is `sis policy show` (`policy.active` was removed
+  from `sis query`); the report's own original provenance is its `policy` field.
 - Require confirmation before extracting bytes, writing outside the given
   output directory, or treating a selector's result as safe to open.

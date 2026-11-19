@@ -114,9 +114,6 @@ if args[:2] == ["corpus", "status"]:
 if args[:2] == ["corpus", "query"]:
     print(json.dumps({"unit": "distinct_items", "groups": [{"key": "pdf:test", "count": 1}]}))
     raise SystemExit(0)
-if args[:2] == ["query", "--contract-version"]:
-    print("language=2 result=4")
-    raise SystemExit(0)
 if args[:1] == ["query"]:
     fmt = next((args[i + 1] for i, a in enumerate(args) if a == "--format"), "text")
     where = next((args[i + 1] for i, a in enumerate(args) if a == "--where"), None)
@@ -331,6 +328,13 @@ def main() -> int:
             "--sis-bin",
             str(binary),
         ])
+        modern_binary = tmp / "modern" / "sis"
+        modern_binary.parent.mkdir()
+        modern_binary.write_text(
+            FAKE_SIS.replace('print("sis 0.6.6-smoke`\\n## injected")', 'print("sis 0.71.0")'),
+            encoding="utf-8",
+        )
+        modern_binary.chmod(0o755)
         run([
             sys.executable,
             str(ROOT / "skills/sis-query/scripts/run_query.py"),
@@ -341,7 +345,7 @@ def main() -> int:
             "--output-dir",
             str(output / "query"),
             "--sis-bin",
-            str(binary),
+            str(modern_binary),
         ])
         old_binary = tmp / "old" / "sis"
         old_binary.parent.mkdir()
@@ -363,7 +367,7 @@ def main() -> int:
             str(old_binary),
         ], expected=2)
         if load(output / "query-old/query-summary.json")["status"] != "unsupported_sis_version":
-            raise AssertionError("query helper ran against a sis build without a query contract version")
+            raise AssertionError("query helper ran against a sis build older than 0.71.0")
         run([
             str(ROOT / "skills/sis-corpus-index/scripts/sync_index.sh"),
             "--name",

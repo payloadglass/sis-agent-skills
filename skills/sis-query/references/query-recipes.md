@@ -1,9 +1,10 @@
 # `sis query` recipes and contract notes
 
-Grounded in `docs/builtin/query.md` and `sis query --help`/`--describe` on the
-installed build. When the installed build disagrees with this file, trust the
-installed build — run `sis query --describe` and `sis query --contract-version`
-first and defer to their output.
+Verified against the released sis 0.71.0 binary (`sis query --help`,
+`sis docs query`, and runs on benign fixtures). When the installed build
+disagrees with this file, trust the installed build and `sis docs query`.
+Only `sis --version` and the `contract` object in each JSON answer identify the
+query contract; 0.71.0 has no `--describe` or `--contract-version`.
 
 ## Command shape
 
@@ -14,28 +15,26 @@ sis query findings --path intake --glob '*.html' --format jsonl
 sis query findings --from-report report.json --format json
 ```
 
-`--format` accepts `text`, `json`, `jsonl`, `yaml`/`yml`, `csv`, `dot`;
+`--format` accepts `text`, `json`, `jsonl`, `yaml`/`yml`, `csv` (`dot` appears in the help text but 0.71.0 rejects it);
 `--json` is a shorthand for `--format json`. JSON results use
 `{ "file", "query", "result", "contract", ... }`; findings are under
 `.result[]`.
 
-## The unified language and ported spellings
+## Namespace spellings and the contract
 
-The query text may be the engine's pipeline grammar directly:
+`findings`, `findings.high`, `findings.composite` and similar are "answered by
+code proven equivalent to the query engine"; a stderr `note:` names the
+canonical pipeline form. Verified on 0.71.0: `--where` works on them. The
+pipeline grammar itself is not accepted as input on 0.71.0 (`items | urls |
+count urls` gives `QUERY_SYNTAX_ERROR`, exit 2): requires a later sis than
+0.71.0, not verified. Every JSON/JSONL/YAML answer carries
+`contract: {language, result}` (`2`/`4` on 0.71.0); fail clearly on a mismatch
+with the contract you recorded.
 
-```bash
-sis query "items | pdf_swfs | project pdf_swfs" sample.pdf --format json
-sis query "items | urls | count urls" sample.pdf --format json
-sis query --describe --format json     # every relation, field, operator the build admits
-```
-
-Older dotted spellings (`findings`, `swf.count`, `urls.count`, ...) still work,
-in two kinds, announced once on stderr: **ported** (answered by the engine; a
-`note:` names the native form; `--where`, `--show-lineage`, `--report-verbosity`
-and `--chain-summary` are refused with a named reason — use `| where` in the
-pipeline) and **not yet ported** (answered by the legacy implementation,
-unchanged). Every JSON/JSONL/YAML answer carries `contract: {language, result}`;
-fail clearly on a mismatch with the contract you recorded.
+Removed namespaces refuse with `QUERY_REMOVED` (exit 3): `verdict`, `why`,
+`tree`, `intent` (use `sis explain verdict` / `sis explain members`),
+`policy.active` (use `sis policy show`), `catalog` and `trailer` (use
+`xref.trailers` and `sis pdf-object`).
 
 ## Exit codes and structured errors
 
@@ -49,8 +48,11 @@ non-zero:
 | 0 | success (including an empty, correctly-filtered result) |
 | 2 | bad query / report that doesn't parse / mode can't provide the projection (`QUERY_SYNTAX_ERROR`, `REPORT_PARSE_ERROR`, `UNSUPPORTED_IN_REPORT_MODE`, `REQUIRES_REPORT_MODE`, `ASSET_SELECTOR_ERROR`, `QUERY_SCOPE_ERROR`, `PERSISTED_ANALYSIS_REFUSED`) |
 | 3 | another execution failure |
-| 5 | answered but incomplete (`ENGINE_ANSWER_INCOMPLETE`, a ported spelling): report as incomplete |
 | 4 | unreadable report (`FILE_READ_ERROR`) |
+
+Any other exit code (including 5) is not documented for `sis query` on
+0.71.0: report the answer as incomplete, never as complete or empty. (Exit 5
+is documented for `sis assess`, where it means indeterminate.)
 
 Keep stderr diagnostics separate from the result; an empty collection is not
 the same thing as an error or an unavailable projection.
@@ -64,7 +66,6 @@ sis query chains sample.html --chain-summary events --format json
 sis query correlations sample.html --format json
 sis query urls sample.html --format json
 sis query iocs sample.html --format json
-sis query policy.active sample.html --format json
 ```
 
 `chains` is the general detector-chain surface. Some aggregations are
@@ -96,16 +97,11 @@ sis query shape --from-report report.json --format json
   `findings_view: "filtered"`, and stderr notes that answers reflect the
   filtered view.
 - Unsupported live-only namespaces return `UNSUPPORTED_IN_REPORT_MODE`.
-- `policy.active` is an exception: it always describes the CURRENT process's
-  policy, even with `--from-report`. For the report's own original
-  provenance, read the report's `policy` field directly.
 
 ## PDF-only namespaces (need a live PDF object graph)
 
 ```bash
 sis query pages sample.pdf
-sis query catalog sample.pdf
-sis query trailer sample.pdf
 sis query 'object 45 0' sample.pdf
 sis query xref.sections sample.pdf
 sis query revisions.detail sample.pdf --where "meta.revision.anomaly_score >= 4"
@@ -218,9 +214,9 @@ general multi-format shell.
 ## Introspecting the installed build
 
 ```bash
-sis query --contract-version   # "language=N result=M" this build speaks
-sis query --describe           # relations, fields, operators, enum domains, value states
+sis --version
+sis docs query          # namespaces, --where grammar, selectors for THIS build
+sis docs asset-graph    # selector grammar and node fields
 ```
 
-Run these before relying on a specific field/relation name existing, and
-before comparing two query results produced by builds that might differ.
+Compare the `contract` object in two answers before comparing the answers.

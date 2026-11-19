@@ -19,8 +19,7 @@
       "sis corpus correlate findings --input FILE [--allow-skips]",
       "sis explain-format FORMAT --json",
       "sis query QUERY INPUT --format FORMAT --where PREDICATE",
-      "sis query QUERY --from-report REPORT --format FORMAT",
-      "sis query --contract-version"
+      "sis query QUERY --from-report REPORT --format FORMAT"
     ]
   },
   "release_provenance": {

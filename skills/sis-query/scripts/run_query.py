@@ -27,6 +27,20 @@ def get_text(binary: str, *args: str) -> str:
     return (result.stdout or result.stderr).strip()
 
 
+MINIMUM = (0, 71, 0)
+
+
+def version_at_least(version_text: str, minimum: tuple[int, int, int]) -> bool:
+    """True when `sis X.Y.Z[-pre]` reads at least `minimum`. Unparseable reads as too old."""
+    found = re.search(r"(\d+)\.(\d+)\.(\d+)(-[0-9A-Za-z.-]+)?", version_text or "")
+    if not found:
+        return False
+    triple = tuple(int(found.group(i)) for i in (1, 2, 3))
+    if triple != minimum:
+        return triple > minimum
+    return found.group(4) is None  # a prerelease of the minimum is older than the minimum
+
+
 def extract_envelope(stdout: str, fmt: str) -> tuple[dict | None, str | None]:
     """Parse a json/jsonl result envelope. Returns (envelope, parse_error)."""
     if fmt not in ("json", "jsonl"):
@@ -85,25 +99,17 @@ def main() -> int:
         command += ["--extract-to", str(Path(args.extract_to).resolve())]
 
     sis_version = get_text(sis_bin, "--version")
-    probe = subprocess.run([sis_bin, "query", "--contract-version"], text=True, capture_output=True, check=False)
-    if probe.returncode != 0:
-        # A build before the unified `sis query` front door (0.71.0) has no
-        # --contract-version. Stop rather than run a query whose shape and
-        # semantics this skill does not describe.
+    # sis 0.71.0 has no `--contract-version` or `--describe`; the query contract
+    # is reported inside every JSON/JSONL/YAML answer as `contract: {language, result}`.
+    # Gate on the binary version instead and record the envelope contract afterwards.
+    if not version_at_least(sis_version, MINIMUM):
         message = (
-            "This sis build does not report a query contract version "
-            "(`sis query --contract-version` failed). sis-query needs sis 0.71.0 or newer; "
-            "no query was run."
+            f"This sis build ({sis_version or 'unknown version'}) is older than {'.'.join(map(str, MINIMUM))}; "
+            "sis-query documents the 0.71.0 `sis query` front door. No query was run."
         )
         (output / "query-summary.json").write_text(
             json.dumps(
-                {
-                    "status": "unsupported_sis_version",
-                    "sis_version": sis_version,
-                    "contract_probe_exit_code": probe.returncode,
-                    "contract_probe_stderr": probe.stderr.strip(),
-                    "message": message,
-                },
+                {"status": "unsupported_sis_version", "sis_version": sis_version, "message": message},
                 indent=2,
             )
             + "\n",
@@ -111,7 +117,6 @@ def main() -> int:
         )
         print(message, file=sys.stderr)
         return 2
-    contract_version = (probe.stdout or probe.stderr).strip()
 
     started = dt.datetime.now(dt.timezone.utc)
     result = subprocess.run(command, text=True, capture_output=True, check=False)
@@ -138,7 +143,6 @@ def main() -> int:
     summary = {
         "command": command,
         "sis_version": sis_version,
-        "contract_version": contract_version,
         "started_utc": started.isoformat(),
         "finished_utc": finished.isoformat(),
         "exit_code": result.returncode,
@@ -159,7 +163,7 @@ def main() -> int:
         "",
         f"- Command: {md_code(' '.join(command))}",
         f"- SIS version: {md_code(sis_version or 'unknown')}",
-        f"- Contract version: {md_code(contract_version or 'unknown')}",
+        f"- Envelope contract: {md_code(json.dumps(envelope_contract) if envelope_contract else 'none in output (text/csv, or an error before the envelope)')}",
         f"- Exit code: {md_code(result.returncode)}",
         f"- Error code: {md_code(error_code or 'none')}",
         f"- Excluded (unknown subjects): {md_code(excluded_unknown if excluded_unknown is not None else 'n/a')}",
@@ -174,11 +178,11 @@ def main() -> int:
     if error_code:
         constraints += 1
         lines.append("- The query returned a structured error; see error_code above before interpreting the result.")
-    if result.returncode == 5:
+    if result.returncode not in (0, 2, 3, 4):
         constraints += 1
         lines.append(
-            "- Exit 5 means the query was answered but the answer is incomplete "
-            "(`ENGINE_ANSWER_INCOMPLETE`). Report it as incomplete, never as a clean or empty result."
+            f"- Exit {result.returncode} is not one of the documented sis 0.71.0 query exits (0, 2, 3, 4). "
+            "Report the query as failed or incomplete; never read it as a clean or empty result."
         )
     if findings_view == "filtered":
         constraints += 1
