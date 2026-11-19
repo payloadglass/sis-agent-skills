@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Run default and deep SIS scans for one sample and compare raw reports."""
+"""Run a baseline and a second-posture SIS scan for one sample and compare raw reports.
+
+Part of the sis-scan skill (compare-postures mode)."""
 
 from __future__ import annotations
 
@@ -28,10 +30,11 @@ def file_sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def run(binary: str, sample: Path, report: Path, deep: bool, prefix: Path) -> tuple[int, dict | None, str | None]:
-    command = [binary, "scan", str(sample)]
-    if deep:
-        command.append("--deep")
+def run(binary: str, sample: Path, report: Path, profile: str, prefix: Path,
+        password_file: Path | None = None) -> tuple[int, dict | None, str | None]:
+    command = [binary, "scan", str(sample), "--analysis-profile", profile]
+    if password_file:
+        command += ["--password-file", str(password_file)]
     command += ["--emit", f"json={report}"]
     result = subprocess.run(command, text=True, capture_output=True, check=False)
     prefix.with_suffix(".stdout.log").write_text(result.stdout, encoding="utf-8")
@@ -72,11 +75,29 @@ def coverage(report: dict | None) -> dict:
     return value if isinstance(value, dict) else {}
 
 
+def recorded_posture(report: dict | None) -> dict:
+    """The posture the report records about itself (not the flags we passed)."""
+    if not report:
+        return {}
+    posture = report.get("analysis_posture") if isinstance(report.get("analysis_posture"), dict) else {}
+    structural = report.get("structural_summary") if isinstance(report.get("structural_summary"), dict) else {}
+    return {
+        "posture_id": posture.get("posture_id"),
+        "scan_options_digest": posture.get("scan_options_digest"),
+        "deep_scan": structural.get("deep_scan"),
+        "scan_context_fingerprint": report.get("scan_context_fingerprint"),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("sample", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--sis-bin", default=os.environ.get("SIS_BIN", "sis"))
+    parser.add_argument("--baseline-profile", choices=("quick", "standard"), default="standard")
+    parser.add_argument("--compare-profile", choices=("deep", "strict"), default="deep",
+                        help="second posture to compare against the baseline (default: deep)")
+    parser.add_argument("--password-file", type=Path, help="file of user-supplied claimed passwords, one per line")
     args = parser.parse_args()
 
     sample = args.sample.resolve()
@@ -87,8 +108,9 @@ def main() -> int:
 
     baseline_path = output / "baseline-report.json"
     deep_path = output / "deep-report.json"
-    base_code, baseline, base_error = run(args.sis_bin, sample, baseline_path, False, output / "baseline")
-    deep_code, deep, deep_error = run(args.sis_bin, sample, deep_path, True, output / "deep")
+    password_file = args.password_file.resolve() if args.password_file else None
+    base_code, baseline, base_error = run(args.sis_bin, sample, baseline_path, args.baseline_profile, output / "baseline", password_file)
+    deep_code, deep, deep_error = run(args.sis_bin, sample, deep_path, args.compare_profile, output / "deep", password_file)
 
     base_kinds = kinds(baseline)
     deep_kinds = kinds(deep)
@@ -99,7 +121,10 @@ def main() -> int:
         "sha256": file_sha256(sample),
         "size": sample.stat().st_size,
         "sis_version": version(args.sis_bin),
+        "baseline_profile": args.baseline_profile,
+        "compare_profile": args.compare_profile,
         "baseline": {
+            "recorded_posture": recorded_posture(baseline),
             "exit_code": base_code,
             "error": base_error,
             "verdict": bverdict,
@@ -109,6 +134,7 @@ def main() -> int:
             "distinct_finding_kind_count": len(base_kinds),
         },
         "deep": {
+            "recorded_posture": recorded_posture(deep),
             "exit_code": deep_code,
             "error": deep_error,
             "verdict": dverdict,
@@ -145,14 +171,14 @@ def main() -> int:
         f"- Size: {md_code(result['size'])} bytes",
         f"- SIS version: {md_code(result['sis_version'] or 'unknown')}",
         "",
-        "## Baseline result",
+        f"## Baseline result ({args.baseline_profile})",
         "",
         f"- Exit code: {md_code(base_code)}",
         f"- Verdict: {md_code(bverdict.get('label') or 'unknown')}",
         f"- Coverage: {md_code(bcov.get('state') or 'unknown')}",
         f"- Error: {md_code(base_error or 'none')}",
         "",
-        "## Deep result",
+        f"## Compare result ({args.compare_profile})",
         "",
         f"- Exit code: {md_code(deep_code)}",
         f"- Verdict: {md_code(dverdict.get('label') or 'unknown')}",
@@ -183,5 +209,5 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except OSError as exc:
-        print(f"sis-analyze helper failed: {exc}", file=sys.stderr)
+        print(f"sis-scan compare helper failed: {exc}", file=sys.stderr)
         raise SystemExit(2)

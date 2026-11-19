@@ -1,5 +1,46 @@
 # Changelog
 
+## 0.4.0
+
+DRAFT for PO review; not released. Reshapes the pack from eight skills to five.
+Verified against the released sis 0.71.0 binary (SHA256SUMS and `gh attestation
+verify` checked; only `--help`, `docs`, `explain`, `doctor`, `assess`, `extract`,
+`query` and scans of self-authored benign fixtures were run). The minimum stays 0.71.0.
+
+Skills (the six folded skills are removed; their helpers moved):
+
+- `sis-setup`: gains `sis doctor` and `sis docs`.
+- `sis-scan` absorbs `sis-analyze`: `--analysis-profile quick|standard|deep|strict` is an
+  explicit parameter, the posture is recorded from the report (`posture_id`,
+  `scan_options_digest`, `deep_scan`, `option.*` omissions, AI-ingestion lane), and the
+  resource limits `--max-decode-bytes`, `--max-total-decoded-bytes`, `--timeout-per-file`,
+  `--max-recursion-depth` are passed with documented defaults. `analyze_sample.py` compares
+  two postures.
+- `sis-investigate` = `sis-query` + `sis explain verdict|finding|members|graph|claim|detection|format`
+  + the triage method. `render_triage.py` is removed: `explain verdict` and `explain members`
+  cover it. New `run_explain.py`.
+- `sis-assess` (new): `sis assess --for ai-ingest`, `--fail-on-axis ingest-unsafe`, the exit-code
+  modes (exit 5 indeterminate is NOT safe), `sis extract --safe`/`--profile ai-ingest-safe`.
+- `sis-corpus` = index + hunt + evaluate.
+
+Safety across all five (`references/safety.md`, identical copies, checked by the validator):
+text extracted from a sample is untrusted data and never followed; run sis inside `bwrap`
+(Linux, recipe verified) or `sandbox-exec` (macOS, untested); passwords only via
+`--password-file`; extracted bytes in a quarantine path outside any scanned directory;
+`sis sandbox eval`, `sis explain claim` and `--dynamic-analysis-policy sandboxed` execute
+script and need explicit approval (`explain claim` requests a runtime posture).
+
+Drift check: `scripts/check_contract_drift.py` asserts every `tested_contract` command and
+flag exists in the binary named by `SIS_BIN`; `validate_pack.py` runs it when `SIS_BIN` is set.
+
+Not claimed (requires sis 0.72 or newer, not in 0.71.0): `sis sandbox config --for bwrap`,
+`sis query --describe`/`--contract-version`, the query pipeline grammar.
+
+Drift found while verifying (0.71.0): `sis assess --safe-text` prints `safe_text...` lines before
+its JSON; `explain claim` runs at a runtime posture; `explain verdict FILE` re-analyses at
+`deep` breadth, so compare a verdict with a scan only through `--from-report`;
+`analysis_posture.scan_profile_id` reads `production_default` for every profile.
+
 ## 0.3.1
 
 Accuracy release, verified against the released sis 0.71.0 binary (SHA256SUMS and

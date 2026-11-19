@@ -1,9 +1,9 @@
 ---
 name: sis-setup
-description: "Check whether a usable, verified `sis` CLI is installed and, only with the user's explicit approval, install or update it from the official release with checksum and attestation verification. Use before the first SIS scan on a machine, when `sis` is not found, when another SIS skill reports a version below its minimum, or when the user asks how to install, verify, or update SIS. Do not use to scan, triage, query, or index files; use the other SIS skills once `sis --version` meets the minimum."
+description: "Check whether a usable, verified `sis` CLI is installed and, only with the user's explicit approval, install or update it from the official release with checksum and attestation verification. Use before the first SIS scan on a machine, when `sis` is not found, when another SIS skill reports a version below its minimum, or when the user asks how to install, verify, or update SIS. Do not use to scan, investigate, assess or index files; use the other SIS skills once `sis --version` meets the minimum."
 compatibility: "Needs a POSIX shell for the helper scripts (Windows: manual PowerShell steps). Network access only for the downloads the user approves; `gh` is optional but needed to verify build provenance. Targets sis 0.71.0 and newer releases."
 metadata:
-  version: "0.3.1"
+  version: "0.4.0"
   runtime: "cli"
   role: "setup-and-verification"
 ---
@@ -37,6 +37,32 @@ If not, report the problem and go to step 2 only if the user wants SIS installed
 SIS is pre-1.0: output fields, finding kinds, and verdicts can change between
 minor versions, so the minimum matters. Never guess an older flag spelling to
 work around an old build.
+
+## Step 1b: identify the build (read-only, no approval needed)
+
+Once `sis --version` is acceptable, `sis doctor` reports engine identity, schema
+versions, capabilities and config state, and checks the working directory and the
+process limits sis applies to its helpers. It reads local state only and scans nothing
+(verified on 0.71.0):
+
+```bash
+sis doctor                       # human-readable; ok / -- (not compiled in) lines
+sis doctor --json                # keys: edition, engine, checks (for support automation)
+sis doctor --config FILE         # also check one config file
+```
+
+Record the scanner build id and detector-set id it prints next to any report you
+produce. Read the capability lines before promising a feature: for example
+`capability.ml` and `capability.ocr` read "not compiled in" on the public build.
+`sis docs index` lists the built-in documentation topics and `sis docs TOPIC` prints
+one (for example `sis docs scan`, `sis docs assess`, `sis docs query`,
+`sis docs known-limitations`). The bundled docs describe the installed build and win
+over this pack when they disagree. Do not run `sis config` or `sis update` from this
+skill: they change state.
+
+For containment, see [references/safety.md](references/safety.md): run sis inside
+`bwrap` (Linux) or `sandbox-exec` (macOS) where available. `sis sandbox config
+--for bwrap` is not in 0.71.0 (requires sis 0.72 or newer; not verified).
 
 ## Step 2: ask before installing
 

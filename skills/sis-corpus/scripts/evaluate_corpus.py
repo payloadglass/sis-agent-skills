@@ -98,7 +98,10 @@ def main() -> int:
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--run-id")
     parser.add_argument("--baseline", type=Path)
-    parser.add_argument("--deep", action="store_true")
+    parser.add_argument("--analysis-profile", choices=("quick", "standard", "deep"), default="standard",
+                        help="analysis posture for the corpus scan (default: standard)")
+    parser.add_argument("--deep", action="store_true", help="deprecated alias for --analysis-profile deep")
+    parser.add_argument("--timeout-per-file", type=int, default=120, help="seconds per file (default 120)")
     parser.add_argument("--sis-bin", default=os.environ.get("SIS_BIN", "sis"))
     args = parser.parse_args()
 
@@ -112,9 +115,10 @@ def main() -> int:
     output.mkdir(parents=True, exist_ok=False)
 
     batch_path = output / "batch-report.json"
-    command = [args.sis_bin, "scan", str(corpus)]
     if args.deep:
-        command.append("--deep")
+        args.analysis_profile = "deep"
+    command = [args.sis_bin, "scan", str(corpus), "--analysis-profile", args.analysis_profile,
+               "--timeout-per-file", str(args.timeout_per_file)]
     command += ["--emit", f"json={batch_path}"]
     started = dt.datetime.now(dt.timezone.utc)
     result = subprocess.run(command, text=True, capture_output=True, check=False)
@@ -170,7 +174,7 @@ def main() -> int:
         "started_utc": started.isoformat(),
         "sis_version": sis_version(args.sis_bin),
         "corpus_path": str(corpus),
-        "mode": "deep" if args.deep else "default",
+        "mode": args.analysis_profile,
         "command": command,
         "exit_code": result.returncode,
         "report_error": report_error,
@@ -230,5 +234,5 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except (OSError, json.JSONDecodeError) as exc:
-        print(f"sis-corpus-evaluate helper failed: {exc}", file=sys.stderr)
+        print(f"sis-corpus evaluate helper failed: {exc}", file=sys.stderr)
         raise SystemExit(2)

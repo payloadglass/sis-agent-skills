@@ -13,8 +13,8 @@ removed or sourced before publishing.
 
 ## Short description (one line)
 
-Check or install a verified `sis` CLI, then scan, triage, query and index
-untrusted documents locally with PayloadGlass SIS. Free. Nothing is uploaded.
+Check or install a verified `sis` CLI, then scan, investigate, assess for AI
+ingestion and index untrusted documents locally with PayloadGlass SIS. Free. Nothing is uploaded.
 
 ## Long description
 
@@ -27,9 +27,12 @@ What you can ask for:
 
 - set up: find `sis`, check its version, and, only if you approve, download the
   official release, verify its checksum and build attestation, and unpack it;
-- scan a file or folder and keep the JSON report;
-- triage a report into a short, evidence-backed summary;
-- compare a default and a deep analysis of one suspicious file;
+- scan a file or folder with an explicit analysis posture and resource limits, and
+  keep the JSON report; compare two postures for one suspicious file;
+- investigate: ask why a verdict was reached, what is inside a file, or for one
+  finding's evidence, and write a short, evidence-backed triage record;
+- assess whether a document may be fed to an AI system, with exit 5
+  (indeterminate) never treated as safe;
 - build and search a local corpus index, and evaluate a folder of samples.
 
 What it does not do:
@@ -40,7 +43,8 @@ What it does not do:
   it could and could not examine; the skills keep coverage gaps, omissions and
   refusals in every summary.
 - **It never opens or runs your samples.** Agents are told not to execute, render
-  or open them.
+  or open them, to treat text extracted from a sample as untrusted data and never
+  follow instructions found in it, and to run `sis` in an OS sandbox where one exists.
 - It does not install anything without your approval, and it will not run a
   binary that fails verification.
 
@@ -100,6 +104,7 @@ can contain executable code.
 | analyses files on your machine; nothing uploaded | Overview section 2.2: local-first means untrusted file content is analysed in the user's environment; "The CLI and Guardian run locally or in customer-controlled hosts" |
 | clean result does not show a file is safe; keeps coverage gaps | Overview header: "SIS does not prove that content is safe, true, authentic, or completely analysed"; section 3 "prove" definition |
 | the CLI scans, queries, explains, reports, in machine-readable form | Overview section 7 table: `sis` CLI is SHIPPING (local native analysis, investigation, reporting, querying, explanation, selected sanitisation, machine output, batch/directory scanning) |
+| assesses whether a document may go to an AI system; exit 5 is indeterminate, not safe | `sis docs assess` and `sis assess --help` on the released 0.71.0 binary (bundled documentation) |
 | distributed as compiled binaries; skills repository holds skills only | Overview section 2.1 (compiled artifacts; do not call it open source or source available) |
 | prerelease, pre-1.0, output can change between minor versions | **Not in the Overview.** SIS v0.70.0 release notes ("We remain pre-1.0 ... can still change between minor versions") |
 | no telemetry | **Not in the Overview.** SIS v0.70.0 release notes ("There is no telemetry") and ADR-0010 (no telemetry that identifies content). Owner: add to the Overview or confirm wording before publishing |

@@ -1,25 +1,44 @@
 {
-  "pack_version": "0.3.1",
+  "pack_version": "0.4.0",
   "runtime_option": "cli-only",
   "sis": {
     "minimum": "0.71.0",
     "tested_against": "0.71.0",
     "tested_contract": [
       "sis --version",
+      "sis doctor [--json]",
+      "sis docs index",
       "sis scan INPUT --emit json=PATH",
-      "sis scan INPUT --deep --emit json=PATH",
-      "sis scan INPUT --analysis-profile deep --emit json=PATH",
+      "sis scan INPUT --analysis-profile quick|standard|deep|strict --emit json=PATH",
+      "sis scan INPUT --max-decode-bytes N --max-total-decoded-bytes N --max-recursion-depth N --timeout-per-file SECONDS",
+      "sis scan INPUT --password-file FILE",
       "sis scan INPUT --emit json=PATH --fail-on none|suspicious|anomalous|malicious",
+      "sis scan INPUT --fail-on-axis ingest-unsafe",
       "sis scan INPUT --index CORPUS_OR_INDEX_PATH [--create-index]",
+      "sis query QUERY INPUT --format FORMAT --where PREDICATE",
+      "sis query QUERY --from-report REPORT --format FORMAT",
+      "sis explain verdict [FILE] --json --from-report REPORT",
+      "sis explain finding INPUT FINDING_ID",
+      "sis explain members [FILE] --json --from-report REPORT",
+      "sis explain graph INPUT --json",
+      "sis explain claim INPUT KIND --trace",
+      "sis explain detection FILE --json",
+      "sis explain format FORMAT --json",
+      "sis assess INPUT --for ai-ingest --json --exit-code-mode ladder|generic --safe-text DIR",
+      "sis extract INPUT --safe --from-report REPORT --format json --out FILE",
+      "sis extract INPUT --profile ai-ingest-safe --format json",
+      "sis sandbox eval FILE --dynamic-analysis-policy sandboxed",
       "sis corpus sync NAME --index PATH --location DIRECTORY --jobs N",
       "sis corpus status NAME --index PATH",
       "sis corpus query NAME --index PATH --family FAMILY --group FIELDS --limit N --order desc --json",
       "sis corpus occurrences NAME --index PATH --content-digest DIGEST --json",
       "sis corpus extract NAME --index PATH --location DIRECTORY --source KEY --asset-path PATH --out FILE",
-      "sis corpus correlate findings --input FILE [--allow-skips]",
-      "sis explain format FORMAT --json",
-      "sis query QUERY INPUT --format FORMAT --where PREDICATE",
-      "sis query QUERY --from-report REPORT --format FORMAT"
+      "sis corpus correlate findings --input FILE [--allow-skips]"
+    ],
+    "not_in_0_71_0": [
+      "sis sandbox config --for bwrap (requires sis 0.72 or newer; not verified)",
+      "sis query --describe and --contract-version (not in 0.71.0)",
+      "sis query pipeline grammar, e.g. 'items | urls | count urls' (not in 0.71.0; later sis, not verified)"
     ]
   },
   "release_provenance": {
