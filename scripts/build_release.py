@@ -16,12 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 SKILLS = [
     "sis-setup",
     "sis-scan",
-    "sis-triage",
-    "sis-analyze",
-    "sis-query",
-    "sis-corpus-index",
-    "sis-corpus-hunt",
-    "sis-corpus-evaluate",
+    "sis-investigate",
+    "sis-assess",
+    "sis-corpus",
 ]
 EXCLUDED_PARTS = {"dist", "__pycache__", ".git"}
 FIXED_TIME = (2020, 1, 1, 0, 0, 0)

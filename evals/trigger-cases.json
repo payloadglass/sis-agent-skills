@@ -30,73 +30,98 @@
     "prompt": "Explain what a PDF file is without scanning anything."
   },
   {
-    "skill": "sis-triage",
+    "skill": "sis-scan",
     "should_trigger": true,
-    "prompt": "Triage this SIS report and tell me what needs analyst attention first."
+    "prompt": "Compare a quick and a deep SIS analysis of this one suspicious file and tell me what deep adds."
   },
   {
-    "skill": "sis-triage",
-    "should_trigger": false,
-    "prompt": "Build a corpus index for this directory."
-  },
-  {
-    "skill": "sis-analyze",
+    "skill": "sis-scan",
     "should_trigger": true,
-    "prompt": "Perform baseline and deep SIS analysis of this one suspicious document."
+    "prompt": "Scan this folder with sis using the strict profile, a 60 second per-file timeout and keep the JSON."
   },
   {
-    "skill": "sis-analyze",
+    "skill": "sis-scan",
     "should_trigger": false,
-    "prompt": "Rank these two hundred reports for SOC review."
+    "prompt": "Why did sis call this report Suspicious? Show me the evidence behind the verdict."
   },
   {
-    "skill": "sis-query",
+    "skill": "sis-investigate",
+    "should_trigger": true,
+    "prompt": "Why did sis give this saved report a Suspicious verdict? Explain the verdict and the top chain."
+  },
+  {
+    "skill": "sis-investigate",
     "should_trigger": true,
     "prompt": "Run `sis query findings.high` against this report and filter to Strong confidence."
   },
   {
-    "skill": "sis-query",
+    "skill": "sis-investigate",
+    "should_trigger": true,
+    "prompt": "What is inside this zip? Show me the nested members and which ones carry findings."
+  },
+  {
+    "skill": "sis-investigate",
+    "should_trigger": true,
+    "prompt": "Triage this existing SIS JSON report: rank what needs attention and list the coverage gaps."
+  },
+  {
+    "skill": "sis-investigate",
     "should_trigger": false,
     "prompt": "Scan this brand-new PDF with SIS for the first time and save a JSON report."
   },
   {
-    "skill": "sis-query",
-    "should_trigger": true,
-    "prompt": "From this saved SIS report, list only the findings with Strong confidence without rescanning."
-  },
-  {
-    "skill": "sis-query",
+    "skill": "sis-investigate",
     "should_trigger": false,
     "prompt": "Count how often this finding kind occurs across my whole indexed corpus."
   },
   {
-    "skill": "sis-corpus-index",
+    "skill": "sis-assess",
     "should_trigger": true,
-    "prompt": "Create an incremental SIS corpus index for /srv/corpus."
+    "prompt": "Is this PDF safe to put in my RAG index? Check it for hidden instructions."
   },
   {
-    "skill": "sis-corpus-index",
-    "should_trigger": false,
-    "prompt": "Search the existing corpus index for one finding kind."
-  },
-  {
-    "skill": "sis-corpus-hunt",
+    "skill": "sis-assess",
     "should_trigger": true,
-    "prompt": "Find every occurrence of this embedded content digest in the SIS corpus index."
+    "prompt": "sis assess exited 5 on this file. Can I ingest it anyway?"
   },
   {
-    "skill": "sis-corpus-hunt",
-    "should_trigger": false,
-    "prompt": "Run a deep analysis of this one file."
-  },
-  {
-    "skill": "sis-corpus-evaluate",
+    "skill": "sis-assess",
     "should_trigger": true,
-    "prompt": "Compare this corpus run with the previous SIS baseline and identify regressions."
+    "prompt": "Give me a text version of this document for my model with the hidden-instruction spans removed."
   },
   {
-    "skill": "sis-corpus-evaluate",
+    "skill": "sis-assess",
     "should_trigger": false,
-    "prompt": "Incrementally sync this directory into an index without evaluating it."
+    "prompt": "Scan this PDF and tell me whether it is malware."
+  },
+  {
+    "skill": "sis-assess",
+    "should_trigger": false,
+    "prompt": "Explain what prompt injection is without looking at any file."
+  },
+  {
+    "skill": "sis-corpus",
+    "should_trigger": true,
+    "prompt": "Index the folder /srv/samples into a sis corpus index and show me the status."
+  },
+  {
+    "skill": "sis-corpus",
+    "should_trigger": true,
+    "prompt": "How often does each finding kind occur across my indexed corpus, grouped by severity?"
+  },
+  {
+    "skill": "sis-corpus",
+    "should_trigger": true,
+    "prompt": "Evaluate this corpus with the new sis build and tell me which verdicts regressed against last week's batch report."
+  },
+  {
+    "skill": "sis-corpus",
+    "should_trigger": false,
+    "prompt": "Scan this single PDF and give me the verdict."
+  },
+  {
+    "skill": "sis-corpus",
+    "should_trigger": false,
+    "prompt": "Install sis on this machine."
   }
 ]

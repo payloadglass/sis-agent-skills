@@ -6,6 +6,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import subprocess
 import sys
 from pathlib import Path
 
@@ -13,12 +14,9 @@ ROOT = Path(__file__).resolve().parents[1]
 EXPECTED = {
     "sis-setup",
     "sis-scan",
-    "sis-triage",
-    "sis-analyze",
-    "sis-query",
-    "sis-corpus-index",
-    "sis-corpus-hunt",
-    "sis-corpus-evaluate",
+    "sis-investigate",
+    "sis-assess",
+    "sis-corpus",
 }
 NAME_RE = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
@@ -127,6 +125,17 @@ def main() -> int:
             if forbidden in script.read_text(encoding="utf-8"):
                 fail(f"{script}: setup helpers must not download; found {forbidden!r}")
 
+    # The safety rules are one document, copied into every skill so that each ZIP is self-contained.
+    safety_copies = {skill: (skills_root / skill / "references/safety.md") for skill in sorted(EXPECTED)}
+    for skill, path in safety_copies.items():
+        if not path.is_file():
+            fail(f"{skill}: missing references/safety.md")
+    if len({path.read_bytes() for path in safety_copies.values()}) != 1:
+        fail("references/safety.md differs between skills; they must be identical")
+    for skill in sorted(EXPECTED):
+        if "references/safety.md" not in (skills_root / skill / "SKILL.md").read_text(encoding="utf-8"):
+            fail(f"{skill}: SKILL.md does not link references/safety.md")
+
     marketplace = json.loads((ROOT / ".claude-plugin/marketplace.json").read_text(encoding="utf-8"))
     plugins = marketplace.get("plugins", [])
     if len(plugins) != 1:
@@ -147,10 +156,23 @@ def main() -> int:
     workflow = ROOT / ".github/workflows/release.yml"
     if not workflow.is_file():
         fail("missing mirror-ready release workflow")
-    for helper in ("build_release.py", "smoke_test.py", "validate_pack.py"):
+    for helper in ("build_release.py", "smoke_test.py", "validate_pack.py", "check_contract_drift.py"):
         path = ROOT / "scripts" / helper
         if not path.is_file() or not os.access(path, os.X_OK):
             fail(f"missing executable pack helper: scripts/{helper}")
+
+    # Contract drift against a real sis binary, when one is given (SIS_BIN).
+    if os.environ.get("SIS_BIN"):
+        drift = subprocess.run(
+            [sys.executable, "-I", str(ROOT / "scripts/check_contract_drift.py")],
+            text=True, capture_output=True, check=False,
+        )
+        sys.stdout.write(drift.stdout)
+        if drift.returncode != 0:
+            sys.stderr.write(drift.stderr)
+            fail("compatibility.json tested_contract has drifted from the sis binary in SIS_BIN")
+    else:
+        print("contract drift check skipped (set SIS_BIN to a sis binary to run it)")
 
     print(f"validated {len(EXPECTED)} SIS Agent Skills")
     return 0

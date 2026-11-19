@@ -27,7 +27,8 @@ if args == ["--version"]:
     raise SystemExit(0)
 if args and args[0] == "scan":
     source = pathlib.Path(args[1])
-    deep = "--deep" in args
+    profile = next((args[i + 1] for i, a in enumerate(args) if a == "--analysis-profile"), None)
+    deep = "--deep" in args or profile in ("deep", "strict")
     emit = next((item.split("=", 1)[1] for item in args if item.startswith("json=")), None)
     if not emit:
         raise SystemExit(2)
@@ -65,6 +66,11 @@ if args and args[0] == "scan":
         }
     else:
         report = {
+            "analysis_posture": {"posture_id": "analysis_posture-smoke-" + (profile or "default"),
+                                 "scan_options_digest": "scan_options-smoke"},
+            "structural_summary": {"deep_scan": deep},
+            "scan_context_fingerprint": f"deep_scan={str(deep).lower()}",
+            "scan_timeout_reached": False,
             "engine_version": "0.6.6-smoke",
             "verdict": {
                 "label": "Suspicious" if deep else "Anomalous",
@@ -105,6 +111,25 @@ if args and args[0] == "scan":
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(report), encoding="utf-8")
     raise SystemExit(0)
+if args[:1] == ["explain"]:
+    print("analysis posture: structural [explain-contract smoke]")
+    print("  DID NOT LOOK: no runtime lane was exercised.")
+    print("explained " + args[1] + " `\n## injected")
+    raise SystemExit(0)
+if args[:1] == ["assess"]:
+    sample_bytes = pathlib.Path(args[1]).read_bytes()
+    code = 5 if b"exit5" in sample_bytes else 0
+    label = "indeterminate" if code == 5 else "none"
+    if "--safe-text" in args:
+        print("safe_text: " + args[args.index("--safe-text") + 1] + "/x.safe.txt")
+        print("safe_text_removals: 0 applied / 0 flagged")
+    print(json.dumps({
+        "action": "allow_logged" if code == 5 else "allow",
+        "label": label,
+        "governance": {"release_decisions": [{"applies_to": "rag_index", "action": "quarantine"}]},
+        "sensitivity_coverage": {"state": "partial", "gaps": ["detector_cost_excluded"]},
+    }))
+    raise SystemExit(code)
 if args[:2] == ["corpus", "sync"]:
     print("synced 2 items")
     raise SystemExit(0)
@@ -314,14 +339,7 @@ def main() -> int:
         ])
         run([
             sys.executable,
-            str(ROOT / "skills/sis-triage/scripts/render_triage.py"),
-            str(output / "scan/report.json"),
-            "--output-dir",
-            str(output / "triage"),
-        ])
-        run([
-            sys.executable,
-            str(ROOT / "skills/sis-analyze/scripts/analyze_sample.py"),
+            str(ROOT / "skills/sis-scan/scripts/analyze_sample.py"),
             str(sample),
             "--output-dir",
             str(output / "analyze"),
@@ -337,7 +355,7 @@ def main() -> int:
         modern_binary.chmod(0o755)
         run([
             sys.executable,
-            str(ROOT / "skills/sis-query/scripts/run_query.py"),
+            str(ROOT / "skills/sis-investigate/scripts/run_query.py"),
             "findings.high",
             str(sample),
             "--where",
@@ -358,7 +376,7 @@ def main() -> int:
         old_binary.chmod(0o755)
         run([
             sys.executable,
-            str(ROOT / "skills/sis-query/scripts/run_query.py"),
+            str(ROOT / "skills/sis-investigate/scripts/run_query.py"),
             "findings",
             str(sample),
             "--output-dir",
@@ -369,7 +387,7 @@ def main() -> int:
         if load(output / "query-old/query-summary.json")["status"] != "unsupported_sis_version":
             raise AssertionError("query helper ran against a sis build older than 0.71.0")
         run([
-            str(ROOT / "skills/sis-corpus-index/scripts/sync_index.sh"),
+            str(ROOT / "skills/sis-corpus/scripts/sync_index.sh"),
             "--name",
             "test` corpus",
             "--location",
@@ -384,7 +402,7 @@ def main() -> int:
             str(binary),
         ])
         run([
-            str(ROOT / "skills/sis-corpus-hunt/scripts/query_index.sh"),
+            str(ROOT / "skills/sis-corpus/scripts/query_index.sh"),
             "--name",
             "test",
             "--index",
@@ -402,7 +420,7 @@ def main() -> int:
         ])
         run([
             sys.executable,
-            str(ROOT / "skills/sis-corpus-evaluate/scripts/evaluate_corpus.py"),
+            str(ROOT / "skills/sis-corpus/scripts/evaluate_corpus.py"),
             str(corpus),
             "--output-root",
             str(output / "evaluate"),
@@ -448,12 +466,170 @@ def main() -> int:
         if load(output / "query/query-result.json")["result"][0]["kind"] != "pdf:test`\n## injected":
             raise AssertionError("query helper did not preserve the raw result verbatim")
 
+        # sis-scan: posture and limits are explicit and the posture is read back from the report.
+        run([
+            sys.executable,
+            str(ROOT / "skills/sis-scan/scripts/run_scan.py"),
+            str(sample),
+            "--output-dir",
+            str(output / "scan-deep"),
+            "--analysis-profile",
+            "deep",
+            "--max-decode-bytes",
+            "1048576",
+            "--timeout-per-file",
+            "30",
+            "--fail-on-axis",
+            "ingest-unsafe",
+            "--sis-bin",
+            str(binary),
+        ])
+        deep_summary = load(output / "scan-deep/scan-summary.json")
+        deep_command = deep_summary["command"]
+        for expected in ("--analysis-profile", "deep", "--max-decode-bytes", "1048576", "--timeout-per-file", "30",
+                         "--max-recursion-depth", "64", "--max-total-decoded-bytes", "268435456",
+                         "--fail-on-axis", "ingest-unsafe"):
+            if expected not in deep_command:
+                raise AssertionError(f"scan helper did not pass {expected}")
+        if deep_summary["recorded_posture"]["posture_id"] != "analysis_posture-smoke-deep" or deep_summary["recorded_posture"]["deep_scan"] is not True:
+            raise AssertionError("scan helper did not record the posture from the report")
+        default_command = load(output / "scan/scan-summary.json")["command"]
+        if default_command[default_command.index("--analysis-profile") + 1] != "standard":
+            raise AssertionError("scan helper default analysis profile is not standard")
+
+        # sis-investigate: explain helper, with the runtime-executing surface refused by default.
+        run([
+            sys.executable,
+            str(ROOT / "skills/sis-investigate/scripts/run_explain.py"),
+            "verdict",
+            "--from-report",
+            str(output / "scan/report.json"),
+            "--output-dir",
+            str(output / "explain"),
+            "--sis-bin",
+            str(modern_binary),
+        ])
+        if "DID NOT LOOK" not in " ".join(load(output / "explain/explain-summary.json")["posture_lines"]):
+            raise AssertionError("explain helper lost the posture lines")
+        refused = run([
+            sys.executable,
+            str(ROOT / "skills/sis-investigate/scripts/run_explain.py"),
+            "claim",
+            str(sample),
+            "pdf:test",
+            "--output-dir",
+            str(output / "explain-claim"),
+            "--sis-bin",
+            str(modern_binary),
+        ], expected=2)
+        if load(output / "explain-claim/explain-summary.json")["status"] != "refused_needs_runtime_approval":
+            raise AssertionError("explain claim ran without runtime approval")
+        run([
+            sys.executable,
+            str(ROOT / "skills/sis-investigate/scripts/run_explain.py"),
+            "graph",
+            str(sample),
+            "--dynamic-analysis-policy",
+            "sandboxed",
+            "--output-dir",
+            str(output / "explain-graph"),
+            "--sis-bin",
+            str(modern_binary),
+        ], expected=2)
+
+        # sis-assess: exit 5 is indeterminate and never a pass; safe-text must go to a quarantine path.
+        assess_ok = tmp / "assess" / "ok.pdf"
+        assess_ok.parent.mkdir()
+        assess_ok.write_bytes(b"fine")
+        assess_five = tmp / "assess" / "five.pdf"
+        assess_five.write_bytes(b"exit5")
+        run([
+            sys.executable,
+            str(ROOT / "skills/sis-assess/scripts/run_assess.py"),
+            str(assess_ok),
+            "--output-dir",
+            str(output / "assess-ok"),
+            "--safe-text-dir",
+            str(tmp / "quarantine"),
+            "--sis-bin",
+            str(modern_binary),
+        ])
+        ok_summary = load(output / "assess-ok/assess-summary.json")
+        if ok_summary["label"] != "none" or ok_summary["injection_axis_clear"] is not True:
+            raise AssertionError("assess helper did not read the label after a safe-text preamble")
+        if ok_summary["ingest_destination_decisions"] != {"rag_index": "quarantine"}:
+            raise AssertionError("assess helper hid a governance quarantine decision")
+        run([
+            sys.executable,
+            str(ROOT / "skills/sis-assess/scripts/run_assess.py"),
+            str(assess_five),
+            "--output-dir",
+            str(output / "assess-five"),
+            "--sis-bin",
+            str(modern_binary),
+        ], expected=5)
+        five_summary = load(output / "assess-five/assess-summary.json")
+        if five_summary["injection_axis_clear"] is not False or five_summary["exit_code"] != 5:
+            raise AssertionError("assess helper treated exit 5 (indeterminate) as clear")
+        if "NOT safe" not in five_summary["exit_meaning"]:
+            raise AssertionError("assess helper did not say exit 5 is not safe")
+        inside = run([
+            sys.executable,
+            str(ROOT / "skills/sis-assess/scripts/run_assess.py"),
+            str(assess_ok),
+            "--output-dir",
+            str(output / "assess-inside"),
+            "--safe-text-dir",
+            str(assess_ok.parent / "derived"),
+            "--sis-bin",
+            str(modern_binary),
+        ], expected=2)
+        if (assess_ok.parent / "derived").exists():
+            raise AssertionError("assess helper created a safe-text directory beside the sample")
+
+        # Contract drift check against a fake binary with controlled help output.
+        help_fake = tmp / "helpbin" / "sis"
+        help_fake.parent.mkdir()
+        help_fake.write_text(
+            "#!/usr/bin/env python3\nimport sys\na = sys.argv[1:]\n"
+            "if a == ['--version']:\n    print('sis 9.9.9'); raise SystemExit(0)\n"
+            "if a == ['--help']:\n    print('Commands:\\n  scan  Scan\\n  explain  Explain\\n\\nOptions:\\n  -V, --version'); raise SystemExit(0)\n"
+            "if a == ['scan', '--help']:\n    print('Options:\\n  --emit <KIND=PATH>\\n  --analysis-profile <P> [possible values: quick, deep]'); raise SystemExit(0)\n"
+            "if a == ['explain', '--help']:\n    print('Commands:\\n  format  Format\\n'); raise SystemExit(0)\n"
+            "if a == ['explain', 'format', '--help']:\n    print('Options:\\n  --json'); raise SystemExit(0)\n"
+            "raise SystemExit(2)\n",
+            encoding="utf-8",
+        )
+        help_fake.chmod(0o755)
+        compat_ok = tmp / "compat-ok.json"
+        compat_ok.write_text(json.dumps({"sis": {"tested_contract": [
+            "sis --version",
+            "sis scan INPUT --emit json=PATH",
+            "sis scan INPUT --analysis-profile quick|deep",
+            "sis explain format FORMAT --json",
+        ]}}), encoding="utf-8")
+        drift_script = ROOT / "scripts/check_contract_drift.py"
+        run([sys.executable, str(drift_script), "--sis-bin", str(help_fake), "--compat", str(compat_ok)])
+        for drifted in (
+            "sis explain-format FORMAT --json",
+            "sis scan INPUT --contract-version",
+            "sis scan INPUT --analysis-profile quick|strict",
+            "sis sandbox config --for bwrap",
+        ):
+            compat_bad = tmp / "compat-bad.json"
+            compat_bad.write_text(json.dumps({"sis": {"tested_contract": [drifted]}}), encoding="utf-8")
+            result = run([sys.executable, str(drift_script), "--sis-bin", str(help_fake), "--compat", str(compat_bad)], expected=1)
+            if "DRIFT" not in result.stderr:
+                raise AssertionError(f"drift check missed: {drifted}")
+
         for path in [
             output / "scan/scan-summary.md",
             output / "scan-batch/scan-summary.md",
-            output / "triage/triage.md",
             output / "analyze/analysis.md",
             output / "query/query-summary.md",
+            output / "scan-deep/scan-summary.md",
+            output / "explain/explain-summary.md",
+            output / "assess-ok/assess-summary.md",
             output / "index out/index-run.md",
             output / "evaluate/run1/summary.md",
         ]:
@@ -471,7 +647,7 @@ def main() -> int:
         if "Traceback" in missing.stderr:
             raise AssertionError("missing CLI produced a Python traceback")
 
-    print("smoke-tested all seven SIS Agent Skills helpers")
+    print("smoke-tested the SIS Agent Skills helpers and the contract drift check")
     return 0
 
 

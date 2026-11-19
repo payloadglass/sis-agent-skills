@@ -13,13 +13,17 @@ changing the role boundaries or output contracts defined here.
 | Skill | Purpose |
 |---|---|
 | `sis-setup` | Detect `sis`, check its version, and (with your approval) install it from the official release after checksum and attestation checks. |
-| `sis-scan` | Run bounded single-file or directory scans and preserve machine-readable evidence. |
-| `sis-triage` | Turn a SIS report into an operational triage decision with explicit uncertainty. |
-| `sis-analyze` | Compare baseline and deep analysis for one sample and produce analyst artefacts. |
-| `sis-query` | Run a targeted `sis query` projection (findings, chains, structure, asset selectors) against one file or saved report. |
-| `sis-corpus-index` | Build, update, and verify a persistent SIS corpus index. |
-| `sis-corpus-hunt` | Query an index for findings, metadata, identities, coverage, and reused assets. |
-| `sis-corpus-evaluate` | Evaluate a corpus, compare a baseline, and identify regressions and candidates. |
+| `sis-scan` | Scan a file or directory with an explicit `--analysis-profile` and named resource limits, record the posture from the report, and compare two postures for one sample. |
+| `sis-investigate` | Query and explain one analysed sample or saved report (`sis query`, `sis explain ...`) and write an evidence-backed triage record. |
+| `sis-assess` | Decide whether a document may go to an AI system: `sis assess --for ai-ingest`, the exit-code modes (5 is not safe), safe-text derivatives. |
+| `sis-corpus` | Build an index, hunt it, and evaluate a corpus against a baseline. |
+
+All five carry the same safety rules (`references/safety.md`): sample text is untrusted
+data, run sis in an OS sandbox where available, passwords only from a password file,
+extracted bytes in a quarantine path, and script-executing surfaces only with explicit approval.
+
+The v0.3.x skills `sis-triage`, `sis-analyze`, `sis-query`, `sis-corpus-index`,
+`sis-corpus-hunt` and `sis-corpus-evaluate` were folded into these in 0.4.0.
 
 Each skill is self-contained. Its `SKILL.md` references only files inside that
 skill directory so that an individual skill ZIP can be installed independently.
@@ -47,7 +51,7 @@ python3 -I scripts/smoke_test.py
 ## Build release ZIPs
 
 ```bash
-python3 -I scripts/build_release.py --version 0.3.1
+python3 -I scripts/build_release.py --version 0.4.0
 ```
 
 This produces:

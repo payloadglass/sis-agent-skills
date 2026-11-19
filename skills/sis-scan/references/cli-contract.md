@@ -1,6 +1,6 @@
 # CLI contract
 
-The skill targets SIS CLI 0.70.0 or newer (commands below verified against 0.71.0).
+The skill targets SIS CLI 0.71.0 or newer (commands below verified against 0.71.0).
 
 ## Single file or directory
 
@@ -11,14 +11,58 @@ sis scan INPUT --emit json=REPORT_PATH
 `INPUT` may be a file or directory. Directory scanning produces a batch JSON
 report. Keep the output path outside the scanned directory.
 
-## Deep analysis
+## Analysis posture (`--analysis-profile`)
 
 ```bash
-sis scan INPUT --deep --emit json=REPORT_PATH
+sis scan INPUT --analysis-profile standard --emit json=REPORT_PATH
 ```
 
-Deep mode is more expensive and may enable additional detectors. It must not be
-used as a silent default when the user requested a quick scan.
+`--analysis-profile quick|standard|deep|strict` names the posture. Verified on 0.71.0
+on a benign fixture:
+
+| Profile | What it does | Recorded in the report |
+|---|---|---|
+| `quick` | cheap detectors only | omission `option.fast` (`analysis_reduced_by_options`); `ai_ingestion_lane_not_run` |
+| `standard` | the default; same finding-set fingerprint as omitting the flag | `deep_scan=false` |
+| `deep` | expensive detectors; same as `--deep` | `deep_scan=true` in `scan_context_fingerprint` and `structural_summary.deep_scan` |
+| `strict` | deep plus strict parser (and parser-diff) | `deep_scan=true`; expect parser-deviation findings |
+
+Never choose `deep` or `strict` silently. The posture is a different view, not
+ground truth. The profile name itself is not stored: the report's
+`analysis_posture.scan_profile_id` reads `production_default` for all four. Record
+the posture from the report instead: `analysis_posture.posture_id`,
+`analysis_posture.scan_options_digest`, `scan_context_fingerprint`,
+`structural_summary.deep_scan`, `scan_timeout_reached`, and the `option.*` and
+`ai_ingestion_lane_not_run` entries of `analysis_coverage.omissions[]`. The options
+digest changes whenever any option changes, including a limit passed at its
+default value.
+
+## Resource limits
+
+| Flag | sis 0.71.0 default | Helper default | Effect when reached |
+|---|---|---|---|
+| `--max-decode-bytes N` | 33554432 (32 MiB) | same | per-stream decode cap |
+| `--max-total-decoded-bytes N` | 268435456 (256 MiB) | same | total decode cap per file |
+| `--max-recursion-depth N` | 64 | same | nesting cap |
+| `--timeout-per-file SECONDS` | none | 120 | scan aborts; `scan_timeout_reached` |
+
+Lowering a limit is recorded as an `option.<name>` omission (verified for
+`option.max_decode_bytes`); a limit that bites yields coverage `partial` and, with
+the verdict gate, can read Anomalous. Raise limits only with the user's approval:
+they bound how much hostile data sis expands.
+
+`--password-file FILE` supplies user-vouched passwords (see `references/safety.md`).
+`--password VALUE` exists but is not used by this pack.
+
+## Ingestion-axis gate
+
+```bash
+sis scan INPUT --analysis-profile standard --fail-on-axis ingest-unsafe --emit json=REPORT_PATH
+```
+
+Exits 1 when the AI-ingestion axis is unsafe. It does not replace `sis assess`: a
+quick posture does not run the AI-ingestion lane (verified), and errors and timeouts
+need separate checking. See the `sis-assess` skill.
 
 ## Multiple output formats in one pass
 

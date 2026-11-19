@@ -96,14 +96,69 @@ def verdict_summary(report: dict) -> tuple[str | None, object, object]:
     return None, None, None
 
 
+# Named resource limits and their defaults. The first three are sis 0.71.0's own
+# defaults (32 MiB, 256 MiB, depth 64); the helper passes them explicitly so the
+# limits in force are recorded in the command and in the report's scan_options_digest.
+# --timeout-per-file has no sis default; 120 s is this pack's choice.
+DEFAULT_LIMITS = {
+    "max_decode_bytes": 33554432,
+    "max_total_decoded_bytes": 268435456,
+    "timeout_per_file": 120,
+    "max_recursion_depth": 64,
+}
+
+
+def posture_summary(report: dict) -> dict:
+    """What the report itself records about how it was produced. Never inferred from our flags."""
+    posture = report.get("analysis_posture") if isinstance(report.get("analysis_posture"), dict) else {}
+    structural = report.get("structural_summary") if isinstance(report.get("structural_summary"), dict) else {}
+    coverage = report.get("analysis_coverage") if isinstance(report.get("analysis_coverage"), dict) else {}
+    omissions = coverage.get("omissions") if isinstance(coverage.get("omissions"), list) else []
+    option_omissions = sorted({
+        str(o.get("capability_id")) for o in omissions
+        if isinstance(o, dict) and str(o.get("capability_id", "")).startswith("option.")
+    })
+    return {
+        "posture_id": posture.get("posture_id"),
+        "scan_options_digest": posture.get("scan_options_digest"),
+        "scanner_build_id": posture.get("scanner_build_id"),
+        "scan_context_fingerprint": report.get("scan_context_fingerprint"),
+        "deep_scan": structural.get("deep_scan"),
+        "scan_timeout_reached": report.get("scan_timeout_reached"),
+        "option_omissions": option_omissions,
+        "ai_ingestion_lane_not_run": any(
+            isinstance(o, dict) and o.get("reason_id") == "ai_ingestion_lane_not_run" for o in omissions
+        ),
+    }
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("input", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--deep", action="store_true")
+    parser.add_argument(
+        "--analysis-profile",
+        choices=("quick", "standard", "deep", "strict"),
+        default="standard",
+        help="analysis posture passed to sis scan (default: standard, which sis 0.71.0 treats as its default)",
+    )
+    parser.add_argument("--deep", action="store_true", help="deprecated alias for --analysis-profile deep")
+    parser.add_argument("--max-decode-bytes", type=int, default=DEFAULT_LIMITS["max_decode_bytes"])
+    parser.add_argument("--max-total-decoded-bytes", type=int, default=DEFAULT_LIMITS["max_total_decoded_bytes"])
+    parser.add_argument("--timeout-per-file", type=int, default=DEFAULT_LIMITS["timeout_per_file"], help="seconds")
+    parser.add_argument("--max-recursion-depth", type=int, default=DEFAULT_LIMITS["max_recursion_depth"])
+    parser.add_argument("--password-file", type=Path, help="file of user-supplied claimed passwords, one per line")
     parser.add_argument("--fail-on", choices=("suspicious", "anomalous", "malicious"))
+    parser.add_argument("--fail-on-axis", choices=("ingest-unsafe",))
     parser.add_argument("--sis-bin", default=os.environ.get("SIS_BIN", "sis"))
     args = parser.parse_args()
+    if args.deep:
+        if args.analysis_profile not in ("standard", "deep"):
+            parser.error("--deep conflicts with --analysis-profile " + args.analysis_profile)
+        args.analysis_profile = "deep"
+    for name in ("max_decode_bytes", "max_total_decoded_bytes", "timeout_per_file", "max_recursion_depth"):
+        if getattr(args, name) <= 0:
+            parser.error(f"--{name.replace('_', '-')} must be a positive integer")
 
     source = args.input.resolve()
     if not source.exists():
@@ -115,11 +170,21 @@ def main() -> int:
 
     report_path = output / "report.json"
     command = [args.sis_bin, "scan", str(source)]
-    if args.deep:
-        command.append("--deep")
+    command += ["--analysis-profile", args.analysis_profile]
+    command += ["--max-decode-bytes", str(args.max_decode_bytes)]
+    command += ["--max-total-decoded-bytes", str(args.max_total_decoded_bytes)]
+    command += ["--timeout-per-file", str(args.timeout_per_file)]
+    command += ["--max-recursion-depth", str(args.max_recursion_depth)]
+    if args.password_file:
+        password_file = args.password_file.resolve()
+        if source.is_dir() and (password_file == source or source in password_file.parents):
+            parser.error("password file must not be inside the scanned directory")
+        command += ["--password-file", str(password_file)]
     command += ["--emit", f"json={report_path}"]
     if args.fail_on:
         command += ["--fail-on", args.fail_on]
+    if args.fail_on_axis:
+        command += ["--fail-on-axis", args.fail_on_axis]
 
     started = dt.datetime.now(dt.timezone.utc)
     result = subprocess.run(command, text=True, capture_output=True, check=False)
@@ -136,10 +201,12 @@ def main() -> int:
             parse_error = str(exc)
 
     label = score = confidence = coverage_state = None
+    recorded_posture: dict = {}
     omissions: list[dict] = []
     findings_count = None
     if isinstance(report, dict):
         label, score, confidence = verdict_summary(report)
+        recorded_posture = posture_summary(report)
         coverage_state, omissions = coverage_summary(report)
         findings = report.get("findings")
         if isinstance(findings, list):
@@ -152,12 +219,20 @@ def main() -> int:
         "input_type": "directory" if source.is_dir() else "file",
         "sha256": sha256(source),
         "sis_version": get_version(args.sis_bin),
-        "mode": "deep" if args.deep else "default",
+        "requested_analysis_profile": args.analysis_profile,
+        "requested_limits": {
+            "max_decode_bytes": args.max_decode_bytes,
+            "max_total_decoded_bytes": args.max_total_decoded_bytes,
+            "timeout_per_file": args.timeout_per_file,
+            "max_recursion_depth": args.max_recursion_depth,
+        },
+        "recorded_posture": recorded_posture,
         "command": command,
         "started_utc": started.isoformat(),
         "finished_utc": finished.isoformat(),
         "exit_code": result.returncode,
         "gate_threshold": args.fail_on,
+        "axis_gate": args.fail_on_axis,
         "report_present": report_path.exists(),
         "report_parse_error": parse_error,
         "verdict": label,
@@ -175,7 +250,10 @@ def main() -> int:
         "",
         f"- Input: {md_code(source)}",
         f"- SIS version: {md_code(summary['sis_version'] or 'unknown')}",
-        f"- Mode: {md_code(summary['mode'])}",
+        f"- Requested analysis profile: {md_code(args.analysis_profile)}",
+        f"- Recorded posture id (from the report): {md_code(recorded_posture.get('posture_id') or 'not recorded')}",
+        f"- Recorded options digest: {md_code(recorded_posture.get('scan_options_digest') or 'not recorded')}",
+        f"- Deep scan (from the report): {md_code(recorded_posture.get('deep_scan') if recorded_posture else 'unknown')}",
         f"- Exit code: {md_code(result.returncode)}",
         f"- Report present: {md_code(summary['report_present'])}",
         f"- Verdict: {md_code(label or 'unknown')}",
@@ -188,6 +266,7 @@ def main() -> int:
         "## Constraints",
         "",
     ]
+    base_len = len(lines)
     if parse_error:
         lines.append(f"- SIS produced a report that could not be parsed: {md_code(parse_error)}")
     if not report_path.exists():
@@ -198,7 +277,23 @@ def main() -> int:
         lines.append("- Anomalous means not fully examined; it is a coverage statement, not evidence of a threat.")
     if result.returncode != 0 and args.fail_on and report_path.exists():
         lines.append("- A non-zero result may be the requested verdict gate; confirm against the report and stderr.")
-    if len(lines) == 16:
+    if recorded_posture.get("option_omissions"):
+        lines.append(
+            "- Options reduced the analysis: " + md_code(", ".join(recorded_posture["option_omissions"]))
+            + ". These are omissions the requested posture or limits caused; report them with the verdict."
+        )
+    if recorded_posture.get("ai_ingestion_lane_not_run"):
+        lines.append(
+            "- The AI-ingestion lane did not run in this posture, so an ingestion-axis gate "
+            "(`--fail-on-axis`) judged nothing. Use `standard` or deeper, or `sis assess`."
+        )
+    if recorded_posture.get("scan_timeout_reached"):
+        lines.append("- The per-file timeout was reached; the report is partial.")
+    if args.fail_on_axis and result.returncode != 0 and report_path.exists():
+        lines.append("- A non-zero result may be the ingestion-axis gate; confirm with `sis assess` before acting.")
+    if args.fail_on_axis:
+        lines.append("- Exit 0 from the axis gate is not an all-clear: errors and timeouts need separate checking.")
+    if len(lines) == base_len:
         lines.append("- No additional constraint was derived by the helper; inspect the raw report.")
     (output / "scan-summary.md").write_text("\n".join(lines) + "\n", encoding="utf-8")
 

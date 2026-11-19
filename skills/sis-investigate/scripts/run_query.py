@@ -105,7 +105,7 @@ def main() -> int:
     if not version_at_least(sis_version, MINIMUM):
         message = (
             f"This sis build ({sis_version or 'unknown version'}) is older than {'.'.join(map(str, MINIMUM))}; "
-            "sis-query documents the 0.71.0 `sis query` front door. No query was run."
+            "sis-investigate documents the 0.71.0 `sis query` front door. No query was run."
         )
         (output / "query-summary.json").write_text(
             json.dumps(
@@ -210,5 +210,5 @@ if __name__ == "__main__":
     try:
         raise SystemExit(main())
     except OSError as exc:
-        print(f"sis-query helper failed: {exc}", file=sys.stderr)
+        print(f"sis-investigate query helper failed: {exc}", file=sys.stderr)
         raise SystemExit(2)
