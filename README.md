@@ -12,7 +12,7 @@ changing the role boundaries or output contracts defined here.
 
 | Skill | Purpose |
 |---|---|
-| `sis-setup` | Detect `sis`, check its version, and (with your approval) install it from the official release after checksum and attestation checks. |
+| `sis-setup` | Detect `sis`, check its version, and (with your approval) install it from the official release after checksum and attestation checks. Includes a recipe for scanning untrusted files inside an OS sandbox (sis 0.72.0 or newer). |
 | `sis-scan` | Run bounded single-file or directory scans and preserve machine-readable evidence. |
 | `sis-triage` | Turn a SIS report into an operational triage decision with explicit uncertainty. |
 | `sis-analyze` | Compare baseline and deep analysis for one sample and produce analyst artefacts. |
@@ -47,7 +47,7 @@ python3 -I scripts/smoke_test.py
 ## Build release ZIPs
 
 ```bash
-python3 -I scripts/build_release.py --version 0.3.1
+python3 -I scripts/build_release.py --version 0.3.2
 ```
 
 This produces:

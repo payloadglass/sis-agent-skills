@@ -1,9 +1,9 @@
 ---
 name: sis-query
 description: "Run ad-hoc `sis query` projections over an analysed file's findings, structure, and content — a specific finding kind, a chain, an object subtree, a stream, or an asset-path selector. Use when an agent needs a targeted, reproducible projection rather than a full scan or triage verdict, including filtering with `--where`, reading saved reports with `--from-report`, or walking the nested asset graph with a selector. Do not use to run an initial scan (use sis-scan) or to produce an operational triage record (use sis-triage); do not use for corpus-wide hunting across many samples (use sis-corpus-hunt)."
-compatibility: "Requires SIS CLI 0.71.0 or newer: the `sis query` front door (envelope contract language 2, result 4) and --from-report semantic-snapshot validation. Verified against the released 0.71.0 binary. `--describe`, `--contract-version` and the pipeline query grammar are not in 0.71.0."
+compatibility: "Requires SIS CLI 0.71.0 or newer: the `sis query` front door (envelope contract language 2, result 4) and --from-report semantic-snapshot validation. Verified against the released 0.71.0 binary and re-run on 0.72.0. `--describe` and `--contract-version` are in neither; the pipeline grammar is accepted only with `--composed` (0.72.0)."
 metadata:
-  version: "0.3.1"
+  version: "0.3.2"
   runtime: "cli"
   role: "query-analyst"
 ---
@@ -38,8 +38,8 @@ for aggregate questions across many samples in a pre-built index, not one file.
 2. Record `sis --version` alongside every result, and the `contract`
    object (`{"language": 2, "result": 4}` on 0.71.0) that every JSON/JSONL/YAML
    answer carries; a query answer is only comparable to another run with the
-   same contract. sis 0.71.0 has no `sis query --contract-version` or
-   `--describe`. If the build is older than 0.71.0, stop and report the
+   same contract (still `2`/`4` on 0.72.0). sis 0.71.0 and 0.72.0 have no
+   `sis query --contract-version` or `--describe`. If the build is older than 0.71.0, stop and report the
    version mismatch; do not fall back to guessed spellings. The `sis-setup`
    skill covers checking and updating the binary.
 3. Confirm the input path exists and is readable, or that the `--from-report`
@@ -52,9 +52,10 @@ for aggregate questions across many samples in a pre-built index, not one file.
 The query text is a namespace spelling (`findings`, `chains`, `urls`, `pages`)
 or an asset-path selector. On 0.71.0 the answer for `findings`-family
 spellings comes from the query engine and a stderr `note:` names the canonical
-pipeline form; the pipeline grammar itself is NOT accepted as input on 0.71.0
-(`items | urls | count urls` returns `QUERY_SYNTAX_ERROR`, exit 2). Do not
-write pipelines (requires a later sis than 0.71.0; not verified). Do not
+pipeline form; the pipeline grammar itself is NOT accepted as bare input on 0.71.0
+or 0.72.0 (`items | urls | count urls` returns `QUERY_SYNTAX_ERROR`, exit 2 with
+JSON output). Do not write pipelines unless the user asks for `--composed`
+(0.72.0 and newer), and then take the grammar from `sis docs query`, not memory. Do not
 invent namespaces or fields: take them from `sis docs query` and the result.
 
 ```bash
