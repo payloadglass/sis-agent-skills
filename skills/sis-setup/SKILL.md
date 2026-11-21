@@ -1,9 +1,9 @@
 ---
 name: sis-setup
 description: "Check whether a usable, verified `sis` CLI is installed and, only with the user's explicit approval, install or update it from the official release with checksum and attestation verification. Use before the first SIS scan on a machine, when `sis` is not found, when another SIS skill reports a version below its minimum, or when the user asks how to install, verify, or update SIS. Do not use to scan, triage, query, or index files; use the other SIS skills once `sis --version` meets the minimum."
-compatibility: "Needs a POSIX shell for the helper scripts (Windows: manual PowerShell steps). Network access only for the downloads the user approves; `gh` is optional but needed to verify build provenance. Targets sis 0.71.0 and newer releases."
+compatibility: "Needs a POSIX shell for the helper scripts (Windows: manual PowerShell steps). Network access only for the downloads the user approves; `gh` is optional but needed to verify build provenance. Targets sis 0.71.0 and newer releases; the sandbox recipe needs 0.72.0 or newer."
 metadata:
-  version: "0.3.1"
+  version: "0.3.2"
   runtime: "cli"
   role: "setup-and-verification"
 ---
@@ -114,10 +114,28 @@ the PowerShell steps in the reference. macOS and Windows binaries are unsigned,
 so the first launch may show a Gatekeeper or SmartScreen prompt; that prompt is
 the user's decision, not yours.
 
-**Known issue in 0.70.0 and 0.71.0 (macOS; tracked as F4520):** `sis sanitize release` fails to start its worker
-(`Invalid argument (os error 22)`) and refuses; `sanitize plan` and `sanitize
-apply` work, and scanning is unaffected. A refusal is never evidence that a file is
-safe. Check the release notes of the version you install for the current status.
+**macOS and `sis sanitize release`:** sis 0.70.0 and 0.71.0 fail to start the
+isolated worker on macOS and refuse. The 0.72.0 release notes say this is fixed;
+this pack has not run `sanitize release` on macOS, so if it refuses, report the
+refusal and the version. `sanitize plan`, `sanitize apply` and scanning are not
+affected. A refusal is never evidence that a file is safe.
+
+## Recipe: scan untrusted files inside an OS sandbox
+
+Use this when the user wants to scan files they do not trust with an extra layer
+around the scanner, or asks how to sandbox sis. Full steps, the per-platform wrapper
+choice, the verification-status table and how to read the config header are in
+[references/sandbox-recipe.md](references/sandbox-recipe.md). In short:
+
+- the recipe needs sis 0.72.0 or newer; it **calls** `sis sandbox config --for
+  <wrapper> --input SAMPLE --output NEW_OUTPUT_DIR` and never embeds or remembers a
+  config, because the command quotes paths and states its own limits;
+- pick the wrapper from the platform: `bwrap` or `systemd` (Linux), `podman` or
+  `docker` (an image the user trusts), `macos`, `windows-sandbox` (preview);
+- read the config's `# Enforces:` and `# Does NOT enforce:` header lines to the user
+  before running it, and do not claim more than they say;
+- **never run `sis sandbox eval` outside an OS sandbox**: it executes the file's
+  JavaScript, is never needed for a scan, and no SIS skill uses it.
 
 ## Required output
 

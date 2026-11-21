@@ -1,6 +1,6 @@
 # CLI contract
 
-The skill targets SIS CLI 0.70.0 or newer (commands below verified against 0.71.0).
+The skill targets SIS CLI 0.71.0 or newer (commands below re-run against the 0.72.0 binary on benign files).
 
 ## Single file or directory
 
@@ -39,7 +39,7 @@ sis scan INPUT --emit json=report.json --fail-on suspicious
 Accepted thresholds in 0.71.0: `none` (default), `suspicious`, `anomalous`,
 `malicious`; there is no `clean`. Labels compare in enum order (`clean` <
 `anomalous` < `suspicious` < `malicious`) and a Clean label whose coverage is
-withheld ranks as Anomalous. Verified on 0.71.0 with a committed fixture that reads
+withheld ranks as Anomalous. Verified on 0.71.0 (and the exit-0 results for a Clean-labelled benign PDF re-run on 0.72.0) with a committed fixture that reads
 Anomalous: `--fail-on anomalous` exits 1; `--fail-on suspicious` and `--fail-on
 malicious` exit 0. So `anomalous` is the lowest threshold that catches input sis did
 not fully examine, and `suspicious` does not. (0.70.0 ranked the labels in a
@@ -66,11 +66,20 @@ is never Clean), followed by a `Scope:` line (nodes examined, coverage, gaps).
   failed at batch level and were never examined. No top-level verdict, no per-entry
   findings.
 
+## Running the scan inside an OS sandbox (sis 0.72.0 and newer)
+
+`sis sandbox config --for WRAPPER --input INPUT --output DIR` prints a wrapper
+config for one run (`bwrap`, `systemd`, `docker`, `podman`, `macos`,
+`windows-sandbox`); it does not run it. Verified on 0.72.0: the bwrap config for a
+benign text file, run, wrote `DIR/report.json`. The recipe is in the `sis-setup`
+skill. `sis sandbox eval` is dynamic analysis (it executes JavaScript) and is not
+part of any scan.
+
 ## Optional: write the scan into a corpus index (sis 0.71.0 and newer)
 
 `sis scan INPUT --index CORPUS_OR_INDEX_PATH` is opt-in; a scan is never indexed
 implicitly. A new index file is created only with `--create-index`; without it a
-missing path is refused (exit 3). It stores the unfiltered report in the
+missing path is refused (exit 3). A new index path must end in `.db`, `.sqlite` or `.sqlite3` (otherwise sis takes it for a corpus name and refuses). It stores the unfiltered report in the
 existing corpus index (a corpus name from `~/.config/sis/corpora.toml`, or an index
 file path), is idempotent on re-scan of the same content and scanner build, and is
 refused with `--stream`. Use it only when the user asked for the result to land in an index;

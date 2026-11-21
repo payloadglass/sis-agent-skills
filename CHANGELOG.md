@@ -1,5 +1,37 @@
 # Changelog
 
+## 0.3.2
+
+Release for sis 0.72.0. Re-verified against the 0.72.0 code (the pre-tag build, which
+still prints `sis 0.71.0`; only `--help`, `docs`, `explain`, `sandbox config` and scans
+of benign files were run). The pack minimum stays 0.71.0; the new sandbox recipe needs
+0.72.0.
+
+- `sis-setup`: new recipe "scan untrusted files inside an OS sandbox"
+  (`references/sandbox-recipe.md`). It calls `sis sandbox config --for <wrapper>`
+  instead of embedding a config, says how to pick the wrapper per platform, carries the
+  verification-status table, tells the agent to read the config's `Enforces` and
+  `Does NOT enforce` header lines, and forbids running `sis sandbox eval` outside an OS
+  sandbox (it executes the file's JavaScript and is never needed for a scan). Run here on
+  Linux with `--for bwrap` against a benign text file; the report was written to the
+  output directory.
+- `sis-scan` and `sis-analyze` point to the recipe.
+- `sis-query`: pipeline grammar is accepted only with `--composed` (0.72.0); `dot`,
+  `--describe` and `--contract-version` are still not available; the contract is still
+  language 2, result 4. A query parse error exits 2 with `--format json` and 1 with the
+  text format.
+- `sis-scan`: a new index path must end in `.db`, `.sqlite` or `.sqlite3`.
+- macOS `sanitize release` note is version-scoped: 0.70.0 and 0.71.0 refuse; the 0.72.0
+  release notes say it is fixed; not re-run for this pack. Internal tracking ids removed.
+- Commands re-run against the 0.72.0 build on benign files: `scan` (`--emit json|sarif`,
+  `--deep`, `--analysis-profile deep`, `--fail-on` all four values, directory batch),
+  `scan --index --create-index`, `corpus sync|status|query`, `corpus correlate findings`,
+  `explain format`, `query` (findings, findings.high with `--where`, chains, selectors,
+  `--from-report`, removed namespaces exit 3). `corpus occurrences` and `corpus extract`
+  were checked against `--help` only.
+- Versions bumped to 0.3.2; `compatibility.json` records `tested_against` 0.72.0.
+
+
 ## 0.3.1
 
 Accuracy release, verified against the released sis 0.71.0 binary (SHA256SUMS and

@@ -3,7 +3,7 @@ name: sis-analyze
 description: "Perform deep, single-sample SIS analysis by preserving a default scan, running a justified deep scan, comparing verdicts, findings, and coverage, and producing analyst-ready artefacts. Use for one suspicious file, parser-boundary investigation, nested asset analysis, or when the user asks what deep mode adds. Do not use for simple acquisition, broad corpus evaluation, or an existing-report-only triage."
 compatibility: "Requires SIS CLI 0.71.0 or newer, Python 3.10+, and local filesystem access."
 metadata:
-  version: "0.3.1"
+  version: "0.3.2"
   runtime: "cli"
   role: "document-malware-analyst"
 ---
@@ -53,11 +53,19 @@ and escalation discipline.
 
 Use [assets/analysis-report.md](assets/analysis-report.md) for manual analysis.
 
+## Sandboxing
+
+Analysis here is static: `sis scan` does not execute the sample, but it parses
+hostile bytes. For untrusted input, scan inside an OS sandbox with the recipe in
+the `sis-setup` skill (sis 0.72.0 or newer; it calls `sis sandbox config --for
+<wrapper>`). Never run `sis sandbox eval` outside an OS sandbox: it executes the
+sample's JavaScript, and this skill never needs it.
+
 ## Guardrails
 
 - Never execute or render the sample.
 - Deep mode is not ground truth; it is a different analysis posture.
-- Anomalous (sis 0.71) means not fully examined, not a threat. Compare omissions
+- Anomalous (sis 0.71 and 0.72) means not fully examined, not a threat. Compare omissions
   across postures: a default scan lists deep-only detectors as `detector_cost_excluded`,
   and deep may resolve them. Clean means nothing found in what sis examined, never
   safe; report what neither posture examined.

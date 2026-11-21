@@ -62,8 +62,10 @@ change between minor versions. SIS itself is distributed as compiled binaries fr
   supported.** The skills do not fall back to uploading your file to a service.
   (How common that limit is on each host is the pending measurement in
   `docs/hosted-sandbox-protocol.md`; this requirement text stays regardless.)
-- macOS note, SIS 0.70.0 and 0.71.0 (F4520, fix planned for 0.71.1): `sis sanitize release` does not start its worker on macOS
-  and refuses. Scanning and the other skills are unaffected.
+- macOS note, SIS 0.70.0 and 0.71.0: `sis sanitize release` does not start its worker on macOS
+  and refuses; the 0.72.0 release notes say it is fixed. Scanning and the other skills are unaffected.
+- Sandbox recipe: the `sis-setup` skill includes "scan untrusted files inside an OS sandbox", which needs
+  `sis` 0.72.0 or newer (`sis sandbox config`).
 
 ## Install: Claude Code
 

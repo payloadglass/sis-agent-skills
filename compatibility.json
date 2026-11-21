@@ -1,9 +1,9 @@
 {
-  "pack_version": "0.3.1",
+  "pack_version": "0.3.2",
   "runtime_option": "cli-only",
   "sis": {
     "minimum": "0.71.0",
-    "tested_against": "0.71.0",
+    "tested_against": "0.72.0",
     "tested_contract": [
       "sis --version",
       "sis scan INPUT --emit json=PATH",
@@ -19,8 +19,11 @@
       "sis corpus correlate findings --input FILE [--allow-skips]",
       "sis explain format FORMAT --json",
       "sis query QUERY INPUT --format FORMAT --where PREDICATE",
-      "sis query QUERY --from-report REPORT --format FORMAT"
-    ]
+      "sis query QUERY --from-report REPORT --format FORMAT",
+      "sis sandbox config --for WRAPPER --input PATH --output DIR [--image IMAGE] [--sis-bin PATH]",
+      "sis query --composed QUERY INPUT"
+    ],
+    "sandbox_recipe_minimum": "0.72.0"
   },
   "release_provenance": {
     "release_repository": "payloadglass/sis-release",

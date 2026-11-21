@@ -3,7 +3,7 @@ name: sis-scan
 description: "Run SIS scans on a local file or directory and preserve machine-readable evidence. Use when an agent is asked to scan, inspect, classify, or gate suspicious content with SIS, produce JSON or SARIF, compare fast and deep posture only when requested, or explain whether the scan was complete. Do not use for interpreting an existing report without running SIS; use sis-triage instead."
 compatibility: "Requires SIS CLI 0.71.0 or newer and local filesystem access."
 metadata:
-  version: "0.3.1"
+  version: "0.3.2"
   runtime: "cli"
   role: "scanner-operator"
 ---
@@ -76,6 +76,16 @@ Produce or preserve:
 
 The helper creates these files. Use [assets/scan-summary.md](assets/scan-summary.md)
 when drafting a manual summary.
+
+## Scanning untrusted files inside an OS sandbox
+
+`sis scan` does not execute the file, but it parses hostile bytes. When the user
+wants an extra layer, or the files come from an untrusted source, use the recipe in
+the `sis-setup` skill ("scan untrusted files inside an OS sandbox", sis 0.72.0 or
+newer): it calls `sis sandbox config --for <wrapper> --input INPUT --output DIR`
+for the platform and the report lands in DIR. Do not write a wrapper config by
+hand, and never run `sis sandbox eval` outside an OS sandbox: it executes the
+file's JavaScript and is never needed for a scan.
 
 ## Guardrails
 
