@@ -6,7 +6,7 @@
     "name": "PayloadGlass"
   },
   "metadata": {
-    "version": "0.3.1",
+    "version": "0.3.2",
     "description": "Portable Agent Skills for SIS CLI workflows."
   },
   "plugins": [

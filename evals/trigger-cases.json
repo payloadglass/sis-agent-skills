@@ -98,5 +98,15 @@
     "skill": "sis-corpus-evaluate",
     "should_trigger": false,
     "prompt": "Incrementally sync this directory into an index without evaluating it."
+  },
+  {
+    "skill": "sis-setup",
+    "should_trigger": true,
+    "prompt": "I need to scan files from an untrusted source. How do I run sis inside an OS sandbox on this machine?"
+  },
+  {
+    "skill": "sis-setup",
+    "should_trigger": false,
+    "prompt": "Run `sis sandbox eval` on this JavaScript file and tell me what it does."
   }
 ]

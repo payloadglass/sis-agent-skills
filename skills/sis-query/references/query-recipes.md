@@ -1,10 +1,10 @@
 # `sis query` recipes and contract notes
 
-Verified against the released sis 0.71.0 binary (`sis query --help`,
-`sis docs query`, and runs on benign fixtures). When the installed build
+Verified against the released sis 0.71.0 binary and re-run on the 0.72.0 binary
+(`sis query --help`, `sis docs query`, and runs on benign fixtures). When the installed build
 disagrees with this file, trust the installed build and `sis docs query`.
 Only `sis --version` and the `contract` object in each JSON answer identify the
-query contract; 0.71.0 has no `--describe` or `--contract-version`.
+query contract; neither 0.71.0 nor 0.72.0 has `--describe` or `--contract-version`.
 
 ## Command shape
 
@@ -15,7 +15,7 @@ sis query findings --path intake --glob '*.html' --format jsonl
 sis query findings --from-report report.json --format json
 ```
 
-`--format` accepts `text`, `json`, `jsonl`, `yaml`/`yml`, `csv` (`dot` appears in the help text but 0.71.0 rejects it);
+`--format` accepts `text`, `json`, `jsonl`, `yaml`/`yml`, `csv` (`dot` appears in the help text but 0.71.0 and 0.72.0 reject it, exit 2);
 `--json` is a shorthand for `--format json`. JSON results use
 `{ "file", "query", "result", "contract", ... }`; findings are under
 `.result[]`.
@@ -25,11 +25,15 @@ sis query findings --from-report report.json --format json
 `findings`, `findings.high`, `findings.composite` and similar are "answered by
 code proven equivalent to the query engine"; a stderr `note:` names the
 canonical pipeline form. Verified on 0.71.0: `--where` works on them. The
-pipeline grammar itself is not accepted as input on 0.71.0 (`items | urls |
-count urls` gives `QUERY_SYNTAX_ERROR`, exit 2): requires a later sis than
-0.71.0, not verified. Every JSON/JSONL/YAML answer carries
-`contract: {language, result}` (`2`/`4` on 0.71.0); fail clearly on a mismatch
-with the contract you recorded.
+pipeline grammar is not accepted as bare input on 0.71.0 or 0.72.0 (`items | urls |
+count urls` gives `QUERY_SYNTAX_ERROR`; exit 2 with `--format json`, exit 1 with the
+text format). On 0.72.0 only, `--composed` makes the query text the composed form
+(for example `sis query --composed 'findings | project findings' sample.pdf
+--format json` ran and answered; the composed grammar is described by `sis docs
+query`, so do not guess operators, and a wrong one is an error, not an empty
+result). Every JSON/JSONL/YAML answer carries `contract: {language, result}`
+(`2`/`4` on 0.71.0 and 0.72.0); fail clearly on a mismatch with the contract you
+recorded.
 
 Removed namespaces refuse with `QUERY_REMOVED` (exit 3): `verdict`, `why`,
 `tree`, `intent` (use `sis explain verdict` / `sis explain members`),

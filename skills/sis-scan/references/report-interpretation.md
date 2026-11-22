@@ -52,8 +52,10 @@ was not examined. Absence of findings is not absence of risk.
 
 ## Known limitation
 
-On macOS, `sis sanitize release` refuses in 0.71.0 (the isolated CDR worker
-cannot start; fix tracked as F4520). Scanning, `doctor` and `sanitize apply` work.
+On macOS, `sis sanitize release` refuses in 0.70.0 and 0.71.0 (the isolated CDR
+worker cannot start). The 0.72.0 release notes say this is fixed; it has not been
+re-run for this pack, so report a refusal as a refusal. Scanning, `doctor` and
+`sanitize apply` work, and a refusal is never evidence that a file is safe.
 
 Also inspect provider participation, parser failures, timeout markers, recursive
 member status, and asset-graph traversal coverage when present. These surfaces
